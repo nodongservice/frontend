@@ -32,7 +32,7 @@ export function AccessibilityMapPage() {
     setSelectedTab,
     setViewState
   } = useAccessibilityMapMock();
-  const [currentViewport, setCurrentViewport] = useState(mapViewport);
+  const [currentViewport] = useState(mapViewport);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [locationNotice, setLocationNotice] = useState('');
 
@@ -49,18 +49,11 @@ export function AccessibilityMapPage() {
           return;
         }
 
-        setCurrentViewport({
-          center: {
-            lat: coords.latitude,
-            lng: coords.longitude
-          },
-          zoom: mapViewport.zoom
-        });
         setCurrentLocation({
           lat: coords.latitude,
           lng: coords.longitude
         });
-        setLocationNotice('현재 위치 기준으로 지도를 표시합니다.');
+        setLocationNotice('현재 위치를 확인했습니다. 현위치 버튼으로 이동할 수 있습니다.');
       },
       (error) => {
         if (error.code === error.PERMISSION_DENIED) {

@@ -1,102 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { NAVER_MAP_CONFIG } from '../../config/appConfig';
+import { loadNaverMapScript } from '../../utils/naverMapSdk';
 import { LoadingView } from '../common/LoadingView';
 import { StatusMessage } from '../common/StatusMessage';
 
 const NAVER_MAP_SCRIPT_ID = 'bridgework-naver-map-sdk';
 const NAVER_MAP_READY_CALLBACK = '__bridgeworkNaverMapReady__';
-const MARKER_COLOR_BY_TYPE = {
-  station: '#6b7280',
-  bus: '#f59e0b',
-  office: '#2563eb',
-  lift: '#8b5cf6',
-  crosswalk: '#10b981'
-};
 
-function loadNaverMapScript(clientId) {
-  if (!clientId) {
-    return Promise.reject(new Error('missing-client-id'));
-  }
-
-  if (window.naver?.maps) {
-    return Promise.resolve(window.naver.maps);
-  }
-
-  return new Promise((resolve, reject) => {
-    window[NAVER_MAP_READY_CALLBACK] = () => {
-      delete window[NAVER_MAP_READY_CALLBACK];
-      resolve(window.naver?.maps);
-    };
-
-    const existingScript = document.getElementById(NAVER_MAP_SCRIPT_ID);
-
-    if (existingScript) {
-      existingScript.addEventListener('error', () => reject(new Error('script-load-failed')), { once: true });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id = NAVER_MAP_SCRIPT_ID;
-    script.src =
-      `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${clientId}` +
-      `&submodules=geocoder&callback=${NAVER_MAP_READY_CALLBACK}`;
-    script.async = true;
-    script.defer = true;
-    script.onerror = () => reject(new Error('script-load-failed'));
-    document.head.appendChild(script);
-  });
-}
-
-function createMarkerIcon(type, label) {
-  const background = MARKER_COLOR_BY_TYPE[type] || '#2563eb';
-
-  return {
-    content: `<div class="accessibility-map__marker is-sdk" style="background:${background};"><span>${label}</span></div>`,
-    anchor: new window.naver.maps.Point(18, 18)
-  };
-}
-
-export function AccessibilityMapCanvas({
-  legend,
-  markers,
-  radiusMeters,
-  routes,
-  currentLocation,
-  viewport,
-  viewState,
-  onRetry
-}) {
+function AccessibilityMapCanvasComponent({ currentLocation, viewport, viewState, onRetry }) {
   const mapElementRef = useRef(null);
-  const mapRef = useRef(null);
-  const overlaysRef = useRef([]);
+  const mapInstanceRef = useRef(null);
+  const currentLocationMarkerRef = useRef(null);
   const [mapScriptStatus, setMapScriptStatus] = useState(() =>
     NAVER_MAP_CONFIG.clientId ? 'loading' : 'missing-client-id'
   );
   const [mapInitError, setMapInitError] = useState('');
-
-  const handleZoomIn = () => {
-    if (!mapRef.current) {
-      return;
-    }
-
-    mapRef.current.setZoom(mapRef.current.getZoom() + 1, true);
-  };
-
-  const handleZoomOut = () => {
-    if (!mapRef.current) {
-      return;
-    }
-
-    mapRef.current.setZoom(mapRef.current.getZoom() - 1, true);
-  };
-
-  const handleRecenterToCurrentLocation = () => {
-    if (!mapRef.current || !currentLocation) {
-      return;
-    }
-
-    mapRef.current.panTo(new window.naver.maps.LatLng(currentLocation.lat, currentLocation.lng));
-  };
 
   useEffect(() => {
     let isMounted = true;
@@ -109,7 +27,11 @@ export function AccessibilityMapCanvas({
     setMapScriptStatus('loading');
     setMapInitError('');
 
-    loadNaverMapScript(NAVER_MAP_CONFIG.clientId)
+    loadNaverMapScript({
+      clientId: NAVER_MAP_CONFIG.clientId,
+      scriptId: NAVER_MAP_SCRIPT_ID,
+      callbackName: NAVER_MAP_READY_CALLBACK
+    })
       .then(() => {
         if (isMounted) {
           setMapScriptStatus('ready');
@@ -128,78 +50,131 @@ export function AccessibilityMapCanvas({
   }, []);
 
   useEffect(() => {
-    if (viewState !== 'success' || mapScriptStatus !== 'ready' || !mapElementRef.current) {
+    if (viewState !== 'success' || mapScriptStatus !== 'ready' || !mapElementRef.current || mapInstanceRef.current) {
       return undefined;
     }
 
-    try {
-      if (!window.naver?.maps?.Map) {
-        throw new Error('sdk-not-ready');
+    let cancelled = false;
+    let frameId = 0;
+    const mapElement = mapElementRef.current;
+
+    const initializeMap = () => {
+      if (cancelled) {
+        return;
       }
 
-      if (!mapRef.current) {
-        mapRef.current = new window.naver.maps.Map(mapElementRef.current, {
+      if (mapElement.clientWidth <= 0 || mapElement.clientHeight <= 0) {
+        frameId = window.requestAnimationFrame(initializeMap);
+        return;
+      }
+
+      try {
+        if (!window.naver?.maps?.Map) {
+          throw new Error('sdk-not-ready');
+        }
+
+        mapInstanceRef.current = new window.naver.maps.Map(mapElement, {
           center: new window.naver.maps.LatLng(viewport.center.lat, viewport.center.lng),
           zoom: viewport.zoom,
+          mapTypeId: window.naver.maps.MapTypeId.NORMAL,
           zoomControl: true
         });
+
+        setMapInitError('');
+      } catch (error) {
+        setMapInitError(error.message || 'map-init-failed');
       }
+    };
 
-      const map = mapRef.current;
-
-      map.setCenter(new window.naver.maps.LatLng(viewport.center.lat, viewport.center.lng));
-      map.setZoom(viewport.zoom);
-      window.naver.maps.Event.trigger(map, 'resize');
-
-      overlaysRef.current.forEach((overlay) => overlay.setMap(null));
-      overlaysRef.current = [];
-
-      const districtRing = new window.naver.maps.Circle({
-        map,
-        center: new window.naver.maps.LatLng(viewport.center.lat, viewport.center.lng),
-        radius: radiusMeters,
-        strokeColor: '#4e82ed',
-        strokeOpacity: 0.55,
-        strokeWeight: 2,
-        fillColor: '#d9e7ff',
-        fillOpacity: 0.16
-      });
-
-      overlaysRef.current.push(districtRing);
-
-      routes.forEach((route) => {
-        const polyline = new window.naver.maps.Polyline({
-          map,
-          path: route.path.map((point) => new window.naver.maps.LatLng(point.lat, point.lng)),
-          strokeColor: route.color,
-          strokeWeight: route.weight,
-          strokeOpacity: 0.95
-        });
-
-        overlaysRef.current.push(polyline);
-      });
-
-      markers.forEach((marker) => {
-        const markerInstance = new window.naver.maps.Marker({
-          map,
-          position: new window.naver.maps.LatLng(marker.lat, marker.lng),
-          icon: createMarkerIcon(marker.type, marker.label),
-          title: marker.label
-        });
-
-        overlaysRef.current.push(markerInstance);
-      });
-
-      setMapInitError('');
-    } catch (error) {
-      setMapInitError(error.message || 'map-init-failed');
-    }
+    initializeMap();
 
     return () => {
-      overlaysRef.current.forEach((overlay) => overlay.setMap(null));
-      overlaysRef.current = [];
+      cancelled = true;
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
     };
-  }, [mapScriptStatus, markers, radiusMeters, routes, viewport, viewState]);
+  }, [mapScriptStatus, viewport, viewState]);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || mapScriptStatus !== 'ready' || viewState !== 'success') {
+      return;
+    }
+
+    mapInstanceRef.current.setCenter(new window.naver.maps.LatLng(viewport.center.lat, viewport.center.lng));
+    mapInstanceRef.current.setZoom(viewport.zoom, false);
+  }, [mapScriptStatus, viewport, viewState]);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || mapScriptStatus !== 'ready' || viewState !== 'success') {
+      return;
+    }
+
+    if (!currentLocation) {
+      if (currentLocationMarkerRef.current) {
+        currentLocationMarkerRef.current.setMap(null);
+        currentLocationMarkerRef.current = null;
+      }
+      return;
+    }
+
+    const position = new window.naver.maps.LatLng(currentLocation.lat, currentLocation.lng);
+
+    if (!currentLocationMarkerRef.current) {
+      currentLocationMarkerRef.current = new window.naver.maps.Marker({
+        position,
+        map: mapInstanceRef.current,
+        title: '현재 위치',
+        icon: {
+          content:
+            '<div class="accessibility-map__current-location-marker" aria-hidden="true"><span></span></div>',
+          anchor: new window.naver.maps.Point(11, 11)
+        }
+      });
+      return;
+    }
+
+    currentLocationMarkerRef.current.setPosition(position);
+    currentLocationMarkerRef.current.setMap(mapInstanceRef.current);
+  }, [currentLocation, mapScriptStatus, viewState]);
+
+  useEffect(
+    () => () => {
+      if (currentLocationMarkerRef.current) {
+        currentLocationMarkerRef.current.setMap(null);
+      }
+      if (mapElementRef.current) {
+        mapElementRef.current.innerHTML = '';
+      }
+      currentLocationMarkerRef.current = null;
+      mapInstanceRef.current = null;
+    },
+    []
+  );
+
+  const handleZoomIn = () => {
+    if (!mapInstanceRef.current) {
+      return;
+    }
+
+    mapInstanceRef.current.setZoom(mapInstanceRef.current.getZoom() + 1, true);
+  };
+
+  const handleZoomOut = () => {
+    if (!mapInstanceRef.current) {
+      return;
+    }
+
+    mapInstanceRef.current.setZoom(mapInstanceRef.current.getZoom() - 1, true);
+  };
+
+  const handleMoveToCurrentLocation = () => {
+    if (!mapInstanceRef.current || !currentLocation) {
+      return;
+    }
+
+    mapInstanceRef.current.panTo(new window.naver.maps.LatLng(currentLocation.lat, currentLocation.lng));
+  };
 
   if (viewState === 'loading') {
     return (
@@ -238,81 +213,48 @@ export function AccessibilityMapCanvas({
     );
   }
 
-  if (mapScriptStatus === 'error') {
+  if (mapScriptStatus === 'error' || mapInitError) {
     return (
       <section className="accessibility-map__map-panel is-feedback">
-        <StatusMessage kind="error">
-          네이버 지도 SDK를 불러오지 못했습니다. Client ID와 Web 서비스 URL 등록값을 확인해주세요.
-        </StatusMessage>
-      </section>
-    );
-  }
-
-  if (mapInitError) {
-    return (
-      <section className="accessibility-map__map-panel is-feedback">
-        <StatusMessage kind="error">
-          지도를 표시하지 못했습니다. 잠시 후 다시 시도해주세요.
-        </StatusMessage>
+        <StatusMessage kind="error">네이버 지도를 표시하지 못했습니다.</StatusMessage>
       </section>
     );
   }
 
   return (
     <section className="accessibility-map__map-panel" aria-label="지역 접근성 지도">
-      <div className="accessibility-map__map-toolbar">
-        <button type="button" className="accessibility-map__map-control accessibility-map__map-control-strong">
-          지도 레이어
-        </button>
-        <button type="button" className="accessibility-map__map-control">
-          지하철 엘리베이터 · 지상버스 노선
-        </button>
-      </div>
-
-      <div className="accessibility-map__legend" aria-label="접근성 점수 범례">
-        <strong>접근성 점수</strong>
-        <ul>
-          {legend.map(([grade, description, tone]) => (
-            <li key={grade}>
-              <span className={`accessibility-map__legend-dot is-${tone}`} aria-hidden="true" />
-              <b>{grade}</b>
-              <span>{description}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
       <div className="accessibility-map__map-surface">
         <div ref={mapElementRef} className="accessibility-map__naver-map" />
-        <div className="accessibility-map__map-actions" aria-label="지도 조작">
-          <button
-            type="button"
-            className="accessibility-map__map-action-button"
-            onClick={handleZoomIn}
-            aria-label="지도 확대"
-          >
-            +
-          </button>
-          <button
-            type="button"
-            className="accessibility-map__map-action-button"
-            onClick={handleZoomOut}
-            aria-label="지도 축소"
-          >
-            -
-          </button>
-          <button
-            type="button"
-            className="accessibility-map__map-action-button is-location"
-            onClick={handleRecenterToCurrentLocation}
-            aria-label="현재 위치로 이동"
-            disabled={!currentLocation}
-          >
-            현위치
-          </button>
-        </div>
-        <div className="accessibility-map__map-pill">60분 이내</div>
+      </div>
+      <div className="accessibility-map__map-actions" aria-label="지도 조작">
+        <button
+          type="button"
+          className="accessibility-map__map-action-button"
+          onClick={handleZoomIn}
+          aria-label="지도 확대"
+        >
+          +
+        </button>
+        <button
+          type="button"
+          className="accessibility-map__map-action-button"
+          onClick={handleZoomOut}
+          aria-label="지도 축소"
+        >
+          -
+        </button>
+        <button
+          type="button"
+          className="accessibility-map__map-action-button is-location"
+          onClick={handleMoveToCurrentLocation}
+          aria-label="현재 위치로 이동"
+          disabled={!currentLocation}
+        >
+          현위치
+        </button>
       </div>
     </section>
   );
 }
+
+export const AccessibilityMapCanvas = memo(AccessibilityMapCanvasComponent);
