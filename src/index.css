@@ -433,6 +433,7 @@ a:hover {
   display: grid;
   grid-template-columns: 62px 360px minmax(520px, 1fr) 420px;
   min-height: calc(100vh - 77px);
+  align-items: stretch;
 }
 
 .accessibility-map__sidebar {
@@ -708,8 +709,12 @@ a:hover {
 
 .accessibility-map__map-panel {
   position: relative;
+  display: flex;
   overflow: hidden;
   background: #f2f5f9;
+  align-self: stretch;
+  height: calc(100vh - 77px);
+  min-height: calc(100vh - 77px);
 }
 
 .accessibility-map__map-panel.is-feedback {
@@ -803,13 +808,86 @@ a:hover {
 }
 
 .accessibility-map__map-surface {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  flex: 1;
+  min-height: 100%;
 }
 
 .accessibility-map__naver-map {
   position: absolute;
   inset: 0;
+}
+
+.accessibility-map__map-actions {
+  position: absolute;
+  right: 18px;
+  bottom: 84px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.accessibility-map__map-action-button {
+  min-width: 52px;
+  min-height: 52px;
+  border: 1px solid #d1d5db;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #111827;
+  font: inherit;
+  font-size: 1.35rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+}
+
+.accessibility-map__map-action-button.is-location {
+  min-width: 72px;
+  padding: 0 12px;
+  font-size: 0.95rem;
+}
+
+.accessibility-map__map-action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.accessibility-map__map-debug {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 3;
+  max-width: 420px;
+  padding: 14px 16px;
+  border: 1px solid #f2b8b5;
+  border-radius: 14px;
+  background: rgba(255, 248, 248, 0.96);
+  color: #7a1f1f;
+  box-shadow: 0 8px 24px rgba(122, 31, 31, 0.12);
+}
+
+.accessibility-map__map-debug.is-neutral {
+  border-color: #bfd2ea;
+  background: rgba(248, 251, 255, 0.96);
+  color: #213a63;
+  box-shadow: 0 8px 24px rgba(33, 58, 99, 0.12);
+}
+
+.accessibility-map__map-debug strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.accessibility-map__map-debug p {
+  margin: 0 0 8px;
+}
+
+.accessibility-map__map-debug ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
 
 .accessibility-map__marker {

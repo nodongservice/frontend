@@ -6,6 +6,10 @@ import { TrafficFilterPanel } from '../components/accessibility-map/TrafficFilte
 import { StatusMessage } from '../components/common/StatusMessage';
 import { useAccessibilityMapMock } from '../hooks/useAccessibilityMapMock';
 
+function isWithinSouthKoreaBounds(latitude, longitude) {
+  return latitude >= 33 && latitude <= 39.5 && longitude >= 124 && longitude <= 132;
+}
+
 export function AccessibilityMapPage() {
   const {
     jobs,
@@ -29,6 +33,7 @@ export function AccessibilityMapPage() {
     setViewState
   } = useAccessibilityMapMock();
   const [currentViewport, setCurrentViewport] = useState(mapViewport);
+  const [currentLocation, setCurrentLocation] = useState(null);
   const [locationNotice, setLocationNotice] = useState('');
 
   useEffect(() => {
@@ -39,12 +44,21 @@ export function AccessibilityMapPage() {
 
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
+        if (!isWithinSouthKoreaBounds(coords.latitude, coords.longitude)) {
+          setLocationNotice('현재 위치가 지도 제공 범위를 벗어나 기본 지도를 표시합니다.');
+          return;
+        }
+
         setCurrentViewport({
           center: {
             lat: coords.latitude,
             lng: coords.longitude
           },
           zoom: mapViewport.zoom
+        });
+        setCurrentLocation({
+          lat: coords.latitude,
+          lng: coords.longitude
         });
         setLocationNotice('현재 위치 기준으로 지도를 표시합니다.');
       },
@@ -117,6 +131,7 @@ export function AccessibilityMapPage() {
           radiusMeters={mapRadiusMeters}
           routes={mapRoutes}
           markers={mapMarkers}
+          currentLocation={currentLocation}
           viewport={currentViewport}
           viewState={viewState}
           onRetry={() => setViewState('success')}
