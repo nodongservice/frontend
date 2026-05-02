@@ -352,11 +352,7 @@ a:hover {
   align-items: center;
   gap: 12px;
   font-size: 2rem;
-}
-
-.accessibility-map__brand strong {
-  font-size: 2rem;
-  line-height: 1;
+  cursor: pointer;
 }
 
 .accessibility-map__brand-logo {
@@ -364,6 +360,12 @@ a:hover {
   height: 42px;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+.accessibility-map__brand-text {
+  height: 24px;
+  width: auto;
+  object-fit: contain;
 }
 
 .accessibility-map__search input {

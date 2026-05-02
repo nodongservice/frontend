@@ -30,7 +30,7 @@ export function AccessibilityMapPage() {
       <header className="accessibility-map__topbar">
         <div className="accessibility-map__brand" aria-label="BridgeWork">
           <img className="accessibility-map__brand-logo" src="/logo.png" alt="" aria-hidden="true" />
-          <strong>Bridgework</strong>
+          <img className="accessibility-map__brand-text" src="/logo-text.png" alt="Bridge Work" />
         </div>
 
         <label className="accessibility-map__search">
