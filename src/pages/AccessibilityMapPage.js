@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { AccessibilityMapCanvas } from '../components/accessibility-map/AccessibilityMapCanvas';
 import { AccessibilityMapDetailPanel } from '../components/accessibility-map/AccessibilityMapDetailPanel';
 import { AccessibilityMapSidebar } from '../components/accessibility-map/AccessibilityMapSidebar';
@@ -27,6 +28,41 @@ export function AccessibilityMapPage() {
     setSelectedTab,
     setViewState
   } = useAccessibilityMapMock();
+  const [currentViewport, setCurrentViewport] = useState(mapViewport);
+  const [locationNotice, setLocationNotice] = useState('');
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationNotice('브라우저가 위치 확인을 지원하지 않아 기본 지도를 표시합니다.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setCurrentViewport({
+          center: {
+            lat: coords.latitude,
+            lng: coords.longitude
+          },
+          zoom: mapViewport.zoom
+        });
+        setLocationNotice('현재 위치 기준으로 지도를 표시합니다.');
+      },
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationNotice('위치 권한이 없어 기본 지도를 표시합니다.');
+          return;
+        }
+
+        setLocationNotice('현재 위치를 확인하지 못해 기본 지도를 표시합니다.');
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000
+      }
+    );
+  }, [mapViewport]);
 
   return (
     <main className="accessibility-map">
@@ -40,6 +76,12 @@ export function AccessibilityMapPage() {
           <span className="sr-only">출발지 입력</span>
           <input type="text" placeholder={searchPlaceholder} />
         </label>
+
+        {locationNotice ? (
+          <p className="accessibility-map__location-notice" role="status" aria-live="polite">
+            {locationNotice}
+          </p>
+        ) : null}
 
         <div className="accessibility-map__persona-tabs" role="tablist" aria-label="장애 유형 선택">
           {Object.entries(personas).map(([key, persona]) => (
@@ -73,7 +115,7 @@ export function AccessibilityMapPage() {
           radiusMeters={mapRadiusMeters}
           routes={mapRoutes}
           markers={mapMarkers}
-          viewport={mapViewport}
+          viewport={currentViewport}
           viewState={viewState}
           onRetry={() => setViewState('success')}
         />
