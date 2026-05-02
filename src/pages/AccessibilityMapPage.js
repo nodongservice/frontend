@@ -72,16 +72,18 @@ export function AccessibilityMapPage() {
           <img className="accessibility-map__brand-text" src="/logo-text.png" alt="Bridge Work" />
         </div>
 
-        <label className="accessibility-map__search">
-          <span className="sr-only">출발지 입력</span>
-          <input type="text" placeholder={searchPlaceholder} />
-        </label>
+        <div className="accessibility-map__search-stack">
+          <label className="accessibility-map__search">
+            <span className="sr-only">출발지 입력</span>
+            <input type="text" placeholder={searchPlaceholder} />
+          </label>
 
-        {locationNotice ? (
-          <p className="accessibility-map__location-notice" role="status" aria-live="polite">
-            {locationNotice}
-          </p>
-        ) : null}
+          {locationNotice ? (
+            <p className="accessibility-map__location-notice" role="status" aria-live="polite">
+              {locationNotice}
+            </p>
+          ) : null}
+        </div>
 
         <div className="accessibility-map__persona-tabs" role="tablist" aria-label="장애 유형 선택">
           {Object.entries(personas).map(([key, persona]) => (

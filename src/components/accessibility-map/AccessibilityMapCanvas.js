@@ -4,6 +4,7 @@ import { LoadingView } from '../common/LoadingView';
 import { StatusMessage } from '../common/StatusMessage';
 
 const NAVER_MAP_SCRIPT_ID = 'bridgework-naver-map-sdk';
+const NAVER_MAP_READY_CALLBACK = '__bridgeworkNaverMapReady__';
 const MARKER_COLOR_BY_TYPE = {
   station: '#6b7280',
   bus: '#f59e0b',
@@ -21,21 +22,26 @@ function loadNaverMapScript(clientId) {
     return Promise.resolve(window.naver.maps);
   }
 
-  const existingScript = document.getElementById(NAVER_MAP_SCRIPT_ID);
-
-  if (existingScript) {
-    return new Promise((resolve, reject) => {
-      existingScript.addEventListener('load', () => resolve(window.naver?.maps), { once: true });
-      existingScript.addEventListener('error', () => reject(new Error('script-load-failed')), { once: true });
-    });
-  }
-
   return new Promise((resolve, reject) => {
+    window[NAVER_MAP_READY_CALLBACK] = () => {
+      delete window[NAVER_MAP_READY_CALLBACK];
+      resolve(window.naver?.maps);
+    };
+
+    const existingScript = document.getElementById(NAVER_MAP_SCRIPT_ID);
+
+    if (existingScript) {
+      existingScript.addEventListener('error', () => reject(new Error('script-load-failed')), { once: true });
+      return;
+    }
+
     const script = document.createElement('script');
     script.id = NAVER_MAP_SCRIPT_ID;
-    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${clientId}`;
+    script.src =
+      `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${clientId}` +
+      `&submodules=geocoder&callback=${NAVER_MAP_READY_CALLBACK}`;
     script.async = true;
-    script.onload = () => resolve(window.naver?.maps);
+    script.defer = true;
     script.onerror = () => reject(new Error('script-load-failed'));
     document.head.appendChild(script);
   });
@@ -57,6 +63,7 @@ export function AccessibilityMapCanvas({ legend, markers, radiusMeters, routes, 
   const [mapScriptStatus, setMapScriptStatus] = useState(() =>
     NAVER_MAP_CONFIG.clientId ? 'loading' : 'missing-client-id'
   );
+  const [mapInitError, setMapInitError] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -67,6 +74,7 @@ export function AccessibilityMapCanvas({ legend, markers, radiusMeters, routes, 
     }
 
     setMapScriptStatus('loading');
+    setMapInitError('');
 
     loadNaverMapScript(NAVER_MAP_CONFIG.clientId)
       .then(() => {
@@ -90,61 +98,68 @@ export function AccessibilityMapCanvas({ legend, markers, radiusMeters, routes, 
       return undefined;
     }
 
-    if (!mapRef.current) {
-      mapRef.current = new window.naver.maps.Map(mapElementRef.current, {
+    try {
+      if (!window.naver?.maps?.Map) {
+        throw new Error('sdk-not-ready');
+      }
+
+      if (!mapRef.current) {
+        mapRef.current = new window.naver.maps.Map(mapElementRef.current, {
+          center: new window.naver.maps.LatLng(viewport.center.lat, viewport.center.lng),
+          zoom: viewport.zoom,
+          zoomControl: true
+        });
+      }
+
+      const map = mapRef.current;
+
+      map.setCenter(new window.naver.maps.LatLng(viewport.center.lat, viewport.center.lng));
+      map.setZoom(viewport.zoom);
+      window.naver.maps.Event.trigger(map, 'resize');
+
+      overlaysRef.current.forEach((overlay) => overlay.setMap(null));
+      overlaysRef.current = [];
+
+      const districtRing = new window.naver.maps.Circle({
+        map,
         center: new window.naver.maps.LatLng(viewport.center.lat, viewport.center.lng),
-        zoom: viewport.zoom,
-        zoomControl: true,
-        zoomControlOptions: {
-          position: window.naver.maps.Position.TOP_LEFT
-        }
+        radius: radiusMeters,
+        strokeColor: '#4e82ed',
+        strokeOpacity: 0.55,
+        strokeWeight: 2,
+        fillColor: '#d9e7ff',
+        fillOpacity: 0.16
       });
+
+      overlaysRef.current.push(districtRing);
+
+      routes.forEach((route) => {
+        const polyline = new window.naver.maps.Polyline({
+          map,
+          path: route.path.map((point) => new window.naver.maps.LatLng(point.lat, point.lng)),
+          strokeColor: route.color,
+          strokeWeight: route.weight,
+          strokeOpacity: 0.95
+        });
+
+        overlaysRef.current.push(polyline);
+      });
+
+      markers.forEach((marker) => {
+        const markerInstance = new window.naver.maps.Marker({
+          map,
+          position: new window.naver.maps.LatLng(marker.lat, marker.lng),
+          icon: createMarkerIcon(marker.type, marker.label),
+          title: marker.label
+        });
+
+        overlaysRef.current.push(markerInstance);
+      });
+
+      setMapInitError('');
+    } catch (error) {
+      setMapInitError(error.message || 'map-init-failed');
     }
-
-    const map = mapRef.current;
-
-    map.setCenter(new window.naver.maps.LatLng(viewport.center.lat, viewport.center.lng));
-    map.setZoom(viewport.zoom);
-
-    overlaysRef.current.forEach((overlay) => overlay.setMap(null));
-    overlaysRef.current = [];
-
-    const districtRing = new window.naver.maps.Circle({
-      map,
-      center: new window.naver.maps.LatLng(viewport.center.lat, viewport.center.lng),
-      radius: radiusMeters,
-      strokeColor: '#4e82ed',
-      strokeOpacity: 0.55,
-      strokeWeight: 2,
-      strokeStyle: 'shortdash',
-      fillColor: '#d9e7ff',
-      fillOpacity: 0.16
-    });
-
-    overlaysRef.current.push(districtRing);
-
-    routes.forEach((route) => {
-      const polyline = new window.naver.maps.Polyline({
-        map,
-        path: route.path.map((point) => new window.naver.maps.LatLng(point.lat, point.lng)),
-        strokeColor: route.color,
-        strokeWeight: route.weight,
-        strokeOpacity: 0.95
-      });
-
-      overlaysRef.current.push(polyline);
-    });
-
-    markers.forEach((marker) => {
-      const markerInstance = new window.naver.maps.Marker({
-        map,
-        position: new window.naver.maps.LatLng(marker.lat, marker.lng),
-        icon: createMarkerIcon(marker.type, marker.label),
-        title: marker.label
-      });
-
-      overlaysRef.current.push(markerInstance);
-    });
 
     return () => {
       overlaysRef.current.forEach((overlay) => overlay.setMap(null));
@@ -195,6 +210,17 @@ export function AccessibilityMapCanvas({ legend, markers, radiusMeters, routes, 
         <StatusMessage kind="error">
           네이버 지도 SDK를 불러오지 못했습니다. Client ID와 Web 서비스 URL 등록값을 확인해주세요.
         </StatusMessage>
+      </section>
+    );
+  }
+
+  if (mapInitError) {
+    return (
+      <section className="accessibility-map__map-panel is-feedback">
+        <StatusMessage kind="error">
+          네이버 지도는 로드됐지만 화면을 그리지 못했습니다. 개발 서버를 재시작하고 다시 확인해주세요.
+        </StatusMessage>
+        <StatusMessage>디버그 코드: {mapInitError}</StatusMessage>
       </section>
     );
   }
