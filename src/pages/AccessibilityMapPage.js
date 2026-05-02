@@ -29,11 +29,7 @@ export function AccessibilityMapPage() {
     <main className="accessibility-map">
       <header className="accessibility-map__topbar">
         <div className="accessibility-map__brand" aria-label="BridgeWork">
-          <span className="accessibility-map__brand-mark" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </span>
+          <img className="accessibility-map__brand-logo" src="/logo.png" alt="" aria-hidden="true" />
           <strong>Bridgework</strong>
         </div>
 
