@@ -853,43 +853,6 @@ a:hover {
   opacity: 0.5;
 }
 
-.accessibility-map__map-debug {
-  position: absolute;
-  left: 16px;
-  bottom: 16px;
-  z-index: 3;
-  max-width: 420px;
-  padding: 14px 16px;
-  border: 1px solid #f2b8b5;
-  border-radius: 14px;
-  background: rgba(255, 248, 248, 0.96);
-  color: #7a1f1f;
-  box-shadow: 0 8px 24px rgba(122, 31, 31, 0.12);
-}
-
-.accessibility-map__map-debug.is-neutral {
-  border-color: #bfd2ea;
-  background: rgba(248, 251, 255, 0.96);
-  color: #213a63;
-  box-shadow: 0 8px 24px rgba(33, 58, 99, 0.12);
-}
-
-.accessibility-map__map-debug strong {
-  display: block;
-  margin-bottom: 6px;
-}
-
-.accessibility-map__map-debug p {
-  margin: 0 0 8px;
-}
-
-.accessibility-map__map-debug ul {
-  margin: 0;
-  padding-left: 18px;
-  font-size: 0.9rem;
-  line-height: 1.45;
-}
-
 .accessibility-map__marker {
   position: absolute;
   transform: translate(-50%, -50%);

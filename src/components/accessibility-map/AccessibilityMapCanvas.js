@@ -5,7 +5,6 @@ import { StatusMessage } from '../common/StatusMessage';
 
 const NAVER_MAP_SCRIPT_ID = 'bridgework-naver-map-sdk';
 const NAVER_MAP_READY_CALLBACK = '__bridgeworkNaverMapReady__';
-const isDevelopment = process.env.NODE_ENV !== 'production';
 const MARKER_COLOR_BY_TYPE = {
   station: '#6b7280',
   bus: '#f59e0b',
@@ -74,22 +73,6 @@ export function AccessibilityMapCanvas({
     NAVER_MAP_CONFIG.clientId ? 'loading' : 'missing-client-id'
   );
   const [mapInitError, setMapInitError] = useState('');
-  const [mapDiagnostics, setMapDiagnostics] = useState({
-    scriptStatus: NAVER_MAP_CONFIG.clientId ? 'loading' : 'missing-client-id',
-    hasNaverGlobal: false,
-    hasMapsNamespace: false,
-    hasMapConstructor: false,
-    mapInstanceCreated: false,
-    containerWidth: 0,
-    containerHeight: 0,
-    childElementCount: 0,
-    renderStatus: 'not-started',
-    centerLat: 0,
-    centerLng: 0,
-    pageOrigin: typeof window !== 'undefined' ? window.location.origin : '',
-    scriptUrl: '',
-    lastError: ''
-  });
 
   const handleZoomIn = () => {
     if (!mapRef.current) {
@@ -120,51 +103,22 @@ export function AccessibilityMapCanvas({
 
     if (!NAVER_MAP_CONFIG.clientId) {
       setMapScriptStatus('missing-client-id');
-      setMapDiagnostics((prev) => ({
-        ...prev,
-        scriptStatus: 'missing-client-id',
-        pageOrigin: typeof window !== 'undefined' ? window.location.origin : '',
-        lastError: 'missing-client-id'
-      }));
       return undefined;
     }
 
     setMapScriptStatus('loading');
     setMapInitError('');
-    setMapDiagnostics((prev) => ({
-      ...prev,
-      scriptStatus: 'loading',
-      pageOrigin: typeof window !== 'undefined' ? window.location.origin : '',
-      lastError: ''
-    }));
 
     loadNaverMapScript(NAVER_MAP_CONFIG.clientId)
       .then(() => {
         if (isMounted) {
           setMapScriptStatus('ready');
-          setMapDiagnostics((prev) => ({
-            ...prev,
-            scriptStatus: 'ready',
-            hasNaverGlobal: Boolean(window.naver),
-            hasMapsNamespace: Boolean(window.naver?.maps),
-            hasMapConstructor: Boolean(window.naver?.maps?.Map),
-            scriptUrl: document.getElementById(NAVER_MAP_SCRIPT_ID)?.getAttribute('src') || ''
-          }));
         }
       })
       .catch((error) => {
         if (isMounted) {
           setMapScriptStatus('error');
           setMapInitError(error.message || 'script-load-failed');
-          setMapDiagnostics((prev) => ({
-            ...prev,
-            scriptStatus: 'error',
-            hasNaverGlobal: Boolean(window.naver),
-            hasMapsNamespace: Boolean(window.naver?.maps),
-            hasMapConstructor: Boolean(window.naver?.maps?.Map),
-            scriptUrl: document.getElementById(NAVER_MAP_SCRIPT_ID)?.getAttribute('src') || '',
-            lastError: error.message || 'script-load-failed'
-          }));
         }
       });
 
@@ -178,25 +132,6 @@ export function AccessibilityMapCanvas({
       return undefined;
     }
 
-    const container = mapElementRef.current;
-    const updateContainerDiagnostics = (lastError = '') => {
-      setMapDiagnostics((prev) => ({
-        ...prev,
-        scriptStatus: mapScriptStatus,
-        hasNaverGlobal: Boolean(window.naver),
-        hasMapsNamespace: Boolean(window.naver?.maps),
-        hasMapConstructor: Boolean(window.naver?.maps?.Map),
-        mapInstanceCreated: Boolean(mapRef.current),
-        containerWidth: container.clientWidth,
-        containerHeight: container.clientHeight,
-        childElementCount: container.childElementCount,
-        scriptUrl: document.getElementById(NAVER_MAP_SCRIPT_ID)?.getAttribute('src') || '',
-        centerLat: viewport.center.lat,
-        centerLng: viewport.center.lng,
-        lastError: lastError || prev.lastError
-      }));
-    };
-
     try {
       if (!window.naver?.maps?.Map) {
         throw new Error('sdk-not-ready');
@@ -207,25 +142,6 @@ export function AccessibilityMapCanvas({
           center: new window.naver.maps.LatLng(viewport.center.lat, viewport.center.lng),
           zoom: viewport.zoom,
           zoomControl: true
-        });
-
-        setMapDiagnostics((prev) => ({
-          ...prev,
-          renderStatus: 'map-created'
-        }));
-
-        window.naver.maps.Event.addListener(mapRef.current, 'idle', () => {
-          setMapDiagnostics((prev) => ({
-            ...prev,
-            renderStatus: 'idle'
-          }));
-        });
-
-        window.naver.maps.Event.addListener(mapRef.current, 'tilesloaded', () => {
-          setMapDiagnostics((prev) => ({
-            ...prev,
-            renderStatus: 'tilesloaded'
-          }));
         });
       }
 
@@ -275,16 +191,8 @@ export function AccessibilityMapCanvas({
       });
 
       setMapInitError('');
-      window.setTimeout(() => {
-        updateContainerDiagnostics();
-        if (!container.childElementCount) {
-          setMapInitError('map-container-empty');
-        }
-      }, 500);
     } catch (error) {
-      const errorCode = error.message || 'map-init-failed';
-      setMapInitError(errorCode);
-      updateContainerDiagnostics(errorCode);
+      setMapInitError(error.message || 'map-init-failed');
     }
 
     return () => {
@@ -335,6 +243,16 @@ export function AccessibilityMapCanvas({
       <section className="accessibility-map__map-panel is-feedback">
         <StatusMessage kind="error">
           네이버 지도 SDK를 불러오지 못했습니다. Client ID와 Web 서비스 URL 등록값을 확인해주세요.
+        </StatusMessage>
+      </section>
+    );
+  }
+
+  if (mapInitError) {
+    return (
+      <section className="accessibility-map__map-panel is-feedback">
+        <StatusMessage kind="error">
+          지도를 표시하지 못했습니다. 잠시 후 다시 시도해주세요.
         </StatusMessage>
       </section>
     );
@@ -393,43 +311,6 @@ export function AccessibilityMapCanvas({
             현위치
           </button>
         </div>
-        {mapInitError ? (
-          <div className="accessibility-map__map-debug" role="alert">
-            <strong>지도 오류</strong>
-            <p>네이버 지도 렌더 중 문제가 발생했습니다.</p>
-            <ul>
-              <li>error: {mapInitError}</li>
-              <li>scriptStatus: {mapDiagnostics.scriptStatus}</li>
-              <li>hasNaverGlobal: {String(mapDiagnostics.hasNaverGlobal)}</li>
-              <li>hasMapsNamespace: {String(mapDiagnostics.hasMapsNamespace)}</li>
-              <li>hasMapConstructor: {String(mapDiagnostics.hasMapConstructor)}</li>
-              <li>mapInstanceCreated: {String(mapDiagnostics.mapInstanceCreated)}</li>
-              <li>container: {mapDiagnostics.containerWidth} x {mapDiagnostics.containerHeight}</li>
-              <li>childElementCount: {mapDiagnostics.childElementCount}</li>
-              <li>renderStatus: {mapDiagnostics.renderStatus}</li>
-              <li>center: {mapDiagnostics.centerLat}, {mapDiagnostics.centerLng}</li>
-              <li>origin: {mapDiagnostics.pageOrigin}</li>
-              <li>scriptUrl: {mapDiagnostics.scriptUrl || 'n/a'}</li>
-            </ul>
-          </div>
-        ) : null}
-        {isDevelopment && !mapInitError ? (
-          <div className="accessibility-map__map-debug is-neutral" role="status" aria-live="polite">
-            <strong>지도 상태</strong>
-            <ul>
-              <li>scriptStatus: {mapDiagnostics.scriptStatus}</li>
-              <li>hasNaverGlobal: {String(mapDiagnostics.hasNaverGlobal)}</li>
-              <li>hasMapsNamespace: {String(mapDiagnostics.hasMapsNamespace)}</li>
-              <li>hasMapConstructor: {String(mapDiagnostics.hasMapConstructor)}</li>
-              <li>mapInstanceCreated: {String(mapDiagnostics.mapInstanceCreated)}</li>
-              <li>container: {mapDiagnostics.containerWidth} x {mapDiagnostics.containerHeight}</li>
-              <li>childElementCount: {mapDiagnostics.childElementCount}</li>
-              <li>renderStatus: {mapDiagnostics.renderStatus}</li>
-              <li>center: {mapDiagnostics.centerLat}, {mapDiagnostics.centerLng}</li>
-              <li>origin: {mapDiagnostics.pageOrigin}</li>
-            </ul>
-          </div>
-        ) : null}
         <div className="accessibility-map__map-pill">60분 이내</div>
       </div>
     </section>
