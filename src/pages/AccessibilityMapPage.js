@@ -12,7 +12,10 @@ export function AccessibilityMapPage() {
     personas,
     filterGroups,
     mapLegend,
+    mapRadiusMeters,
+    mapRoutes,
     mapMarkers,
+    mapViewport,
     searchPlaceholder,
     selectedJob,
     selectedJobId,
@@ -67,7 +70,10 @@ export function AccessibilityMapPage() {
         />
         <AccessibilityMapCanvas
           legend={mapLegend}
+          radiusMeters={mapRadiusMeters}
+          routes={mapRoutes}
           markers={mapMarkers}
+          viewport={mapViewport}
           viewState={viewState}
           onRetry={() => setViewState('success')}
         />

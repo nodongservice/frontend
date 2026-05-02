@@ -1,15 +1,157 @@
+import { useEffect, useRef, useState } from 'react';
+import { NAVER_MAP_CONFIG } from '../../config/appConfig';
 import { LoadingView } from '../common/LoadingView';
 import { StatusMessage } from '../common/StatusMessage';
 
-function Marker({ label, type, x, y }) {
-  return (
-    <div className={`accessibility-map__marker is-${type}`} style={{ left: x, top: y }}>
-      <span>{label}</span>
-    </div>
-  );
+const NAVER_MAP_SCRIPT_ID = 'bridgework-naver-map-sdk';
+const MARKER_COLOR_BY_TYPE = {
+  station: '#6b7280',
+  bus: '#f59e0b',
+  office: '#2563eb',
+  lift: '#8b5cf6',
+  crosswalk: '#10b981'
+};
+
+function loadNaverMapScript(clientId) {
+  if (!clientId) {
+    return Promise.reject(new Error('missing-client-id'));
+  }
+
+  if (window.naver?.maps) {
+    return Promise.resolve(window.naver.maps);
+  }
+
+  const existingScript = document.getElementById(NAVER_MAP_SCRIPT_ID);
+
+  if (existingScript) {
+    return new Promise((resolve, reject) => {
+      existingScript.addEventListener('load', () => resolve(window.naver?.maps), { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('script-load-failed')), { once: true });
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.id = NAVER_MAP_SCRIPT_ID;
+    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${clientId}`;
+    script.async = true;
+    script.onload = () => resolve(window.naver?.maps);
+    script.onerror = () => reject(new Error('script-load-failed'));
+    document.head.appendChild(script);
+  });
 }
 
-export function AccessibilityMapCanvas({ legend, markers, viewState, onRetry }) {
+function createMarkerIcon(type, label) {
+  const background = MARKER_COLOR_BY_TYPE[type] || '#2563eb';
+
+  return {
+    content: `<div class="accessibility-map__marker is-sdk" style="background:${background};"><span>${label}</span></div>`,
+    anchor: new window.naver.maps.Point(18, 18)
+  };
+}
+
+export function AccessibilityMapCanvas({ legend, markers, radiusMeters, routes, viewport, viewState, onRetry }) {
+  const mapElementRef = useRef(null);
+  const mapRef = useRef(null);
+  const overlaysRef = useRef([]);
+  const [mapScriptStatus, setMapScriptStatus] = useState(() =>
+    NAVER_MAP_CONFIG.clientId ? 'loading' : 'missing-client-id'
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!NAVER_MAP_CONFIG.clientId) {
+      setMapScriptStatus('missing-client-id');
+      return undefined;
+    }
+
+    setMapScriptStatus('loading');
+
+    loadNaverMapScript(NAVER_MAP_CONFIG.clientId)
+      .then(() => {
+        if (isMounted) {
+          setMapScriptStatus('ready');
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setMapScriptStatus('error');
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (viewState !== 'success' || mapScriptStatus !== 'ready' || !mapElementRef.current) {
+      return undefined;
+    }
+
+    if (!mapRef.current) {
+      mapRef.current = new window.naver.maps.Map(mapElementRef.current, {
+        center: new window.naver.maps.LatLng(viewport.center.lat, viewport.center.lng),
+        zoom: viewport.zoom,
+        zoomControl: true,
+        zoomControlOptions: {
+          position: window.naver.maps.Position.TOP_LEFT
+        }
+      });
+    }
+
+    const map = mapRef.current;
+
+    map.setCenter(new window.naver.maps.LatLng(viewport.center.lat, viewport.center.lng));
+    map.setZoom(viewport.zoom);
+
+    overlaysRef.current.forEach((overlay) => overlay.setMap(null));
+    overlaysRef.current = [];
+
+    const districtRing = new window.naver.maps.Circle({
+      map,
+      center: new window.naver.maps.LatLng(viewport.center.lat, viewport.center.lng),
+      radius: radiusMeters,
+      strokeColor: '#4e82ed',
+      strokeOpacity: 0.55,
+      strokeWeight: 2,
+      strokeStyle: 'shortdash',
+      fillColor: '#d9e7ff',
+      fillOpacity: 0.16
+    });
+
+    overlaysRef.current.push(districtRing);
+
+    routes.forEach((route) => {
+      const polyline = new window.naver.maps.Polyline({
+        map,
+        path: route.path.map((point) => new window.naver.maps.LatLng(point.lat, point.lng)),
+        strokeColor: route.color,
+        strokeWeight: route.weight,
+        strokeOpacity: 0.95
+      });
+
+      overlaysRef.current.push(polyline);
+    });
+
+    markers.forEach((marker) => {
+      const markerInstance = new window.naver.maps.Marker({
+        map,
+        position: new window.naver.maps.LatLng(marker.lat, marker.lng),
+        icon: createMarkerIcon(marker.type, marker.label),
+        title: marker.label
+      });
+
+      overlaysRef.current.push(markerInstance);
+    });
+
+    return () => {
+      overlaysRef.current.forEach((overlay) => overlay.setMap(null));
+      overlaysRef.current = [];
+    };
+  }, [mapScriptStatus, markers, radiusMeters, routes, viewport, viewState]);
+
   if (viewState === 'loading') {
     return (
       <section className="accessibility-map__map-panel is-feedback">
@@ -25,6 +167,34 @@ export function AccessibilityMapCanvas({ legend, markers, viewState, onRetry }) 
         <button type="button" className="primary-button accessibility-map__retry-button" onClick={onRetry}>
           다시 시도
         </button>
+      </section>
+    );
+  }
+
+  if (mapScriptStatus === 'missing-client-id') {
+    return (
+      <section className="accessibility-map__map-panel is-feedback">
+        <StatusMessage kind="error">
+          네이버 지도 Client ID가 없습니다. `.env.local`에 `REACT_APP_NAVER_MAP_CLIENT_ID`를 설정해주세요.
+        </StatusMessage>
+      </section>
+    );
+  }
+
+  if (mapScriptStatus === 'loading') {
+    return (
+      <section className="accessibility-map__map-panel is-feedback">
+        <LoadingView label="네이버 지도를 불러오는 중입니다..." />
+      </section>
+    );
+  }
+
+  if (mapScriptStatus === 'error') {
+    return (
+      <section className="accessibility-map__map-panel is-feedback">
+        <StatusMessage kind="error">
+          네이버 지도 SDK를 불러오지 못했습니다. Client ID와 Web 서비스 URL 등록값을 확인해주세요.
+        </StatusMessage>
       </section>
     );
   }
@@ -54,14 +224,7 @@ export function AccessibilityMapCanvas({ legend, markers, viewState, onRetry }) 
       </div>
 
       <div className="accessibility-map__map-surface">
-        <div className="accessibility-map__map-grid" aria-hidden="true" />
-        <div className="accessibility-map__district-ring" aria-hidden="true" />
-        <div className="accessibility-map__route accessibility-map__route-green" aria-hidden="true" />
-        <div className="accessibility-map__route accessibility-map__route-red" aria-hidden="true" />
-        <div className="accessibility-map__route accessibility-map__route-blue" aria-hidden="true" />
-        {markers.map((marker) => (
-          <Marker key={marker.id} {...marker} />
-        ))}
+        <div ref={mapElementRef} className="accessibility-map__naver-map" />
         <div className="accessibility-map__map-pill">60분 이내</div>
       </div>
     </section>

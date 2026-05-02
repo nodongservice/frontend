@@ -149,12 +149,55 @@ export const accessibilityMapMockData = {
     ['B', '60 ~ 79', 'warning'],
     ['C', '60 미만', 'danger']
   ],
+  mapViewport: {
+    center: { lat: 37.498095, lng: 127.02761 },
+    zoom: 16
+  },
+  mapRadiusMeters: 850,
+  mapRoutes: [
+    {
+      id: 'line-green',
+      color: '#17a34a',
+      weight: 5,
+      path: [
+        { lat: 37.49888, lng: 127.02144 },
+        { lat: 37.49862, lng: 127.02321 },
+        { lat: 37.49828, lng: 127.02577 },
+        { lat: 37.49798, lng: 127.02775 },
+        { lat: 37.49771, lng: 127.02989 },
+        { lat: 37.49744, lng: 127.03234 }
+      ]
+    },
+    {
+      id: 'line-red',
+      color: '#c6254d',
+      weight: 8,
+      path: [
+        { lat: 37.50029, lng: 127.02482 },
+        { lat: 37.49926, lng: 127.02579 },
+        { lat: 37.49796, lng: 127.02697 },
+        { lat: 37.49664, lng: 127.02811 },
+        { lat: 37.49535, lng: 127.02926 }
+      ]
+    },
+    {
+      id: 'line-blue',
+      color: '#3b82f6',
+      weight: 5,
+      path: [
+        { lat: 37.49909, lng: 127.02216 },
+        { lat: 37.49862, lng: 127.02347 },
+        { lat: 37.49816, lng: 127.02488 },
+        { lat: 37.49778, lng: 127.02601 }
+      ]
+    }
+  ],
   mapMarkers: [
-    { id: 'm1', label: '역', x: '15%', y: '18%', type: 'station' },
-    { id: 'm2', label: '버스', x: '68%', y: '19%', type: 'bus' },
-    { id: 'm3', label: '사무실', x: '76%', y: '46%', type: 'office' },
-    { id: 'm4', label: '승강', x: '40%', y: '62%', type: 'lift' },
-    { id: 'm5', label: '횡단', x: '83%', y: '72%', type: 'crosswalk' },
-    { id: 'm6', label: '정류', x: '23%', y: '80%', type: 'bus' }
+    { id: 'm1', label: '역', lat: 37.49972, lng: 127.02415, type: 'station' },
+    { id: 'm2', label: '버스', lat: 37.50008, lng: 127.03056, type: 'bus' },
+    { id: 'm3', label: '사무실', lat: 37.49819, lng: 127.03132, type: 'office' },
+    { id: 'm4', label: '승강', lat: 37.49666, lng: 127.02719, type: 'lift' },
+    { id: 'm5', label: '횡단', lat: 37.49573, lng: 127.03194, type: 'crosswalk' },
+    { id: 'm6', label: '정류', lat: 37.49488, lng: 127.02459, type: 'bus' }
   ]
 };
