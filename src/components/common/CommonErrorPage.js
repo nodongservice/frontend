@@ -28,7 +28,7 @@ export function CommonErrorPage({ status = 500, title, description, actionHref =
   return (
     <main className="common-error-page" aria-labelledby="common-error-title">
       <section className="common-error-page__content">
-        <img className="common-error-page__logo" src={logoBig} alt="BridgeWork" />
+        <img className="common-error-page__logo" src={logoBig} alt="BridgeWork" loading="lazy" decoding="async" />
         <p className="common-error-page__status">{status}</p>
         <h1 id="common-error-title">{title || content.title}</h1>
         <p className="common-error-page__description">{description || content.description}</p>
