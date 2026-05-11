@@ -1489,7 +1489,7 @@ export function MainPage() {
                           className={`accessibility-map__profile-option${getProfileId(profile) === String(selectedProfileId) ? ' is-selected' : ''}`}
                           role="option"
                           aria-selected={getProfileId(profile) === String(selectedProfileId)}
-                          onMouseDown={(event) => {
+                          onClick={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
                             setSelectedProfileId(getProfileId(profile));

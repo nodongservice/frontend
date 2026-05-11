@@ -503,7 +503,7 @@ function AccessibilityMapCanvasComponent({
                   className={`accessibility-map__profile-option${profile.id === String(selectedProfileId) ? ' is-selected' : ''}`}
                   role="option"
                   aria-selected={profile.id === String(selectedProfileId)}
-                  onMouseDown={(event) => {
+                  onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
                     onSelectProfile?.(profile.id);
