@@ -1,5 +1,13 @@
 import { POLICY_DOCUMENT_MAP } from './policyDocuments';
 import { ROUTE_PATHS } from './routes';
+import {
+  DEFAULT_LOCALE,
+  SUPPORTED_LOCALE_CODES,
+  buildLocalizedPath,
+  getLocaleFromPathname,
+  isSupportedLocale,
+  stripLocaleFromPathname
+} from '../i18n/locales';
 
 export const SITE_URL = 'https://www.bridgework.cloud';
 export const DEFAULT_OG_IMAGE_PATH = '/og-image.png';
@@ -110,4 +118,30 @@ export function buildAbsoluteUrl(path = ROUTE_PATHS.root) {
 
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   return `${SITE_URL}${normalizedPath}`;
+}
+
+export function buildCanonicalPath(pathname = ROUTE_PATHS.root) {
+  const normalizedPathname = normalizePathname(pathname);
+  const locale = getLocaleFromPathname(normalizedPathname);
+  const hasLocalePrefix = isSupportedLocale(String(normalizedPathname).split('/')[1]);
+  const pathWithoutLocale = stripLocaleFromPathname(normalizedPathname);
+
+  return buildLocalizedPath(pathWithoutLocale, hasLocalePrefix ? locale : DEFAULT_LOCALE);
+}
+
+export function buildCanonicalUrl(pathname = ROUTE_PATHS.root) {
+  return buildAbsoluteUrl(buildCanonicalPath(pathname));
+}
+
+export function buildAlternateUrls(pathname = ROUTE_PATHS.root) {
+  const pathWithoutLocale = stripLocaleFromPathname(normalizePathname(pathname));
+  const alternateEntries = SUPPORTED_LOCALE_CODES.map((locale) => [
+    locale,
+    buildAbsoluteUrl(buildLocalizedPath(pathWithoutLocale, locale))
+  ]);
+
+  return Object.fromEntries([
+    ...alternateEntries,
+    ['x-default', buildAbsoluteUrl(buildLocalizedPath(pathWithoutLocale, DEFAULT_LOCALE))]
+  ]);
 }

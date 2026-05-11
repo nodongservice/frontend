@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { buildAbsoluteUrl, getPageMetadata, SITE_NAME } from '../config/pageMetadata';
+import { buildAbsoluteUrl, buildAlternateUrls, buildCanonicalUrl, getPageMetadata, SITE_NAME } from '../config/pageMetadata';
 import { stripLocaleFromPathname } from '../i18n/locales';
 
 function setMetaAttribute(selector, attribute, value) {
@@ -32,17 +32,34 @@ function setLinkAttribute(selector, rel, href) {
   element.setAttribute('href', href);
 }
 
+function setAlternateLinks(alternateUrls) {
+  document.head.querySelectorAll('link[data-managed-alternate="true"]').forEach((element) => {
+    element.remove();
+  });
+
+  Object.entries(alternateUrls).forEach(([hreflang, href]) => {
+    const element = document.createElement('link');
+    element.setAttribute('rel', 'alternate');
+    element.setAttribute('hreflang', hreflang);
+    element.setAttribute('href', href);
+    element.setAttribute('data-managed-alternate', 'true');
+    document.head.appendChild(element);
+  });
+}
+
 export function usePageMetadata() {
   const location = useLocation();
 
   useEffect(() => {
     const pathname = stripLocaleFromPathname(location.pathname);
     const metadata = getPageMetadata(pathname);
-    const canonicalUrl = buildAbsoluteUrl(location.pathname);
+    const canonicalUrl = buildCanonicalUrl(location.pathname);
+    const alternateUrls = buildAlternateUrls(location.pathname);
     const imageUrl = buildAbsoluteUrl(metadata.imagePath);
 
     document.title = metadata.title;
     setLinkAttribute('link[rel="canonical"]', 'canonical', canonicalUrl);
+    setAlternateLinks(alternateUrls);
     setMetaAttribute('meta[name="description"]', 'content', metadata.description);
     setMetaAttribute('meta[property="og:type"]', 'content', metadata.type);
     setMetaAttribute('meta[property="og:url"]', 'content', canonicalUrl);
@@ -58,6 +75,7 @@ export function usePageMetadata() {
     setMetaAttribute('meta[name="twitter:card"]', 'content', 'summary_large_image');
     setMetaAttribute('meta[name="twitter:title"]', 'content', metadata.title);
     setMetaAttribute('meta[name="twitter:description"]', 'content', metadata.description);
+    setMetaAttribute('meta[name="twitter:url"]', 'content', canonicalUrl);
     setMetaAttribute('meta[name="twitter:image"]', 'content', imageUrl);
   }, [location.pathname]);
 }

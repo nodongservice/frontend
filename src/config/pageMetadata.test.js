@@ -1,4 +1,4 @@
-import { getPageMetadata } from './pageMetadata';
+import { buildAlternateUrls, buildCanonicalPath, buildCanonicalUrl, getPageMetadata } from './pageMetadata';
 
 describe('getPageMetadata', () => {
   it('returns route metadata for major pages', () => {
@@ -23,6 +23,25 @@ describe('getPageMetadata', () => {
     expect(getPageMetadata('/missing-page')).toMatchObject({
       title: '페이지를 찾을 수 없습니다 | Bridge Work',
       path: '/missing-page'
+    });
+  });
+
+  it('builds normalized canonical URLs for localized routes', () => {
+    expect(buildCanonicalPath('/')).toBe('/ko');
+    expect(buildCanonicalPath('/terms/')).toBe('/ko/terms');
+    expect(buildCanonicalPath('/en/terms?utm_source=test')).toBe('/en/terms');
+    expect(buildCanonicalUrl('/settings/policies/privacy-policy#top')).toBe(
+      'https://www.bridgework.cloud/ko/settings/policies/privacy-policy'
+    );
+  });
+
+  it('builds hreflang alternate URLs from the same canonical path', () => {
+    expect(buildAlternateUrls('/en/privacy')).toMatchObject({
+      ko: 'https://www.bridgework.cloud/ko/privacy',
+      zh: 'https://www.bridgework.cloud/zh/privacy',
+      en: 'https://www.bridgework.cloud/en/privacy',
+      ja: 'https://www.bridgework.cloud/ja/privacy',
+      'x-default': 'https://www.bridgework.cloud/ko/privacy'
     });
   });
 });
