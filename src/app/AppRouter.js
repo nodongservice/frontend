@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { hasRequiredRole } from '../auth/authorization';
 import { LoadingView } from '../components/common/LoadingView';
 import { PageShell } from '../components/common/PageShell';
 import { AUTH_PROVIDER_ROUTES, LEGACY_ROUTE_PATHS, LOCALIZED_ROUTE_PATHS, ROUTE_PATHS } from '../config/routes';
@@ -29,8 +30,8 @@ function RouteFallback() {
   );
 }
 
-function AuthRoute({ children }) {
-  const { isAuthenticated, isInitializing } = useAuth();
+function AuthRoute({ children, requiredRole }) {
+  const { currentUser, isAuthenticated, isInitializing } = useAuth();
   const { localizePath } = useLocale();
 
   if (isInitializing) {
@@ -38,6 +39,10 @@ function AuthRoute({ children }) {
   }
 
   if (!isAuthenticated) {
+    return <Navigate to={localizePath(ROUTE_PATHS.root)} replace />;
+  }
+
+  if (!hasRequiredRole(currentUser, requiredRole)) {
     return <Navigate to={localizePath(ROUTE_PATHS.root)} replace />;
   }
 
