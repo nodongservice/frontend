@@ -2247,7 +2247,8 @@ html[data-bw-reduce-motion='off'] .home-section-entrance--quick {
 }
 
 .common-error-page__kakao-button,
-.common-error-page__home-button {
+.common-error-page__home-button,
+.common-error-page__back-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2264,19 +2265,36 @@ html[data-bw-reduce-motion='off'] .home-section-entrance--quick {
   font-weight: 700;
 }
 
-.common-error-page__home-button {
+.common-error-page__actions {
+  width: 100%;
   margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.common-error-page__home-button {
   background: var(--primary);
   color: #fff;
 }
 
+.common-error-page__back-button {
+  border: 1px solid #b9cef6;
+  background: #fff;
+  color: #113b6f;
+  cursor: pointer;
+}
+
 .common-error-page__kakao-button:hover,
-.common-error-page__home-button:hover {
+.common-error-page__home-button:hover,
+.common-error-page__back-button:hover {
   text-decoration: none;
 }
 
 .common-error-page__kakao-button:focus-visible,
-.common-error-page__home-button:focus-visible {
+.common-error-page__home-button:focus-visible,
+.common-error-page__back-button:focus-visible {
   outline: 3px solid rgba(13, 99, 243, 0.28);
   outline-offset: 3px;
 }
@@ -2288,6 +2306,13 @@ html[data-bw-reduce-motion='off'] .home-section-entrance--quick {
 
   .common-error-page__content {
     padding: 32px 20px;
+  }
+
+  .common-error-page__actions,
+  .common-error-page__kakao-button,
+  .common-error-page__home-button,
+  .common-error-page__back-button {
+    width: 100%;
   }
 }
 

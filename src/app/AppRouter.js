@@ -35,7 +35,11 @@ function AuthRoute({ children, requiredRole }) {
   const { localizePath } = useLocale();
 
   if (isInitializing) {
-    return null;
+    return (
+      <PageShell title="세션 확인" description="로그인 상태를 확인하고 있습니다.">
+        <LoadingView label="세션 검증 중..." />
+      </PageShell>
+    );
   }
 
   if (!isAuthenticated) {
