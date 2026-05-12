@@ -3243,6 +3243,20 @@ html[data-bw-reduce-motion='off'] .home-section-entrance--quick {
   font-weight: 900;
 }
 
+.jobs-detail__explanation-section p {
+  margin: 0;
+  color: #374151;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.jobs-detail__subheading {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 900;
+}
+
 .jobs-detail__bullet-list,
 .jobs-detail__explanation-section ul {
   margin: 0;
@@ -3257,6 +3271,46 @@ html[data-bw-reduce-motion='off'] .home-section-entrance--quick {
 .jobs-detail__explanation-section li {
   margin: 4px 0;
   overflow-wrap: anywhere;
+}
+
+.jobs-detail__explanation-section .jobs-detail__program-list,
+.jobs-detail__program-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 0;
+  list-style: none;
+}
+
+.jobs-detail__program-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.jobs-detail__program-list strong {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.jobs-detail__program-list p {
+  margin: 0;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.jobs-detail__program-list span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .jobs-detail__explanation-card .jobs-detail__status-list li {

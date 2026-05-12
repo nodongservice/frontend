@@ -38,7 +38,9 @@ function normalizeExplanation(explanation) {
     shortSummary: explanation?.shortSummary || result.short_summary || '',
     recommendationReasons: explanation?.recommendationReasons || result.recommendation_reasons || [],
     cautionPoints: explanation?.cautionPoints || result.caution_points || [],
-    checklist: explanation?.checklist || result.checklist || []
+    checklist: explanation?.checklist || result.checklist || [],
+    nextStepSummary: explanation?.nextStepSummary || result.next_step_summary || '',
+    recommendedPrograms: explanation?.recommendedPrograms || result.recommended_programs || []
   };
 }
 
@@ -218,6 +220,26 @@ export function JobDetailPanel({
                         </ul>
                       </section>
                     ))}
+                    {llmExplanation.recommendedPrograms.length ? (
+                      <section className="jobs-detail__explanation-section">
+                        <h4>이런 준비가 도움이 될 수 있어요</h4>
+                        {llmExplanation.nextStepSummary ? <p>{llmExplanation.nextStepSummary}</p> : null}
+                        <strong className="jobs-detail__subheading">추천 프로그램</strong>
+                        <ul className="jobs-detail__program-list">
+                          {llmExplanation.recommendedPrograms.map((program, index) => (
+                            <li key={`${program.sourceType || program.source_type}-${program.recordId || program.record_id}-${program.title}-${index}`}>
+                              <strong>{program.title}</strong>
+                              {program.reason ? <p>{program.reason}</p> : null}
+                              {program.providerName || program.provider_name || program.startDate || program.start_date ? (
+                                <span>
+                                  {[program.providerName || program.provider_name, program.startDate || program.start_date].filter(Boolean).join(' · ')}
+                                </span>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    ) : null}
                   </div>
                 ) : (
                   <NoticeBox>추천 설명 세부 항목이 없습니다. 공고 정보와 적합도 점수를 함께 확인해주세요.</NoticeBox>

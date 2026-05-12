@@ -743,6 +743,26 @@ function PopularPostingDetailModal({
                           </ul>
                         </div>
                       ) : null}
+                      {Array.isArray(quickExplainState.data.recommendedPrograms) && quickExplainState.data.recommendedPrograms.length ? (
+                        <div className="jobs-detail__section jobs-detail__explanation-card">
+                          <h3>이런 준비가 도움이 될 수 있어요</h3>
+                          {quickExplainState.data.nextStepSummary ? <p>{quickExplainState.data.nextStepSummary}</p> : null}
+                          <strong className="jobs-detail__subheading">추천 프로그램</strong>
+                          <ul className="jobs-detail__program-list">
+                            {quickExplainState.data.recommendedPrograms.map((program, index) => (
+                              <li key={`${program.sourceType || program.source_type}-${program.recordId || program.record_id}-${program.title}-${index}`}>
+                                <strong>{program.title}</strong>
+                                {program.reason ? <p>{program.reason}</p> : null}
+                                {program.providerName || program.provider_name || program.startDate || program.start_date ? (
+                                  <span>
+                                    {[program.providerName || program.provider_name, program.startDate || program.start_date].filter(Boolean).join(' · ')}
+                                  </span>
+                                ) : null}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
                     </>
                   ) : null}
                 </section>

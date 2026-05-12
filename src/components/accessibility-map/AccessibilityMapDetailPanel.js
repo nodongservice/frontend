@@ -47,6 +47,8 @@ export function AccessibilityMapDetailPanel({
   const cautionPoints = explanation?.cautionPoints || explanation?.aiResponse?.result?.caution_points || [];
   const checklist = explanation?.checklist || explanation?.aiResponse?.result?.checklist || [];
   const shortSummary = explanation?.shortSummary || explanation?.aiResponse?.result?.short_summary || '';
+  const nextStepSummary = explanation?.nextStepSummary || explanation?.aiResponse?.result?.next_step_summary || '';
+  const recommendedPrograms = explanation?.recommendedPrograms || explanation?.aiResponse?.result?.recommended_programs || [];
 
   return (
     <aside className="accessibility-map__detail-panel" aria-label="공고 상세 패널">
@@ -235,6 +237,26 @@ export function AccessibilityMapDetailPanel({
                     <section className="jobs-detail__explanation-section">
                       <h4>참고해주세요</h4>
                       <ul>{cautionPoints.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ul>
+                    </section>
+                  ) : null}
+                  {recommendedPrograms.length ? (
+                    <section className="jobs-detail__explanation-section">
+                      <h4>이런 준비가 도움이 될 수 있어요</h4>
+                      {nextStepSummary ? <p>{nextStepSummary}</p> : null}
+                      <strong className="jobs-detail__subheading">추천 프로그램</strong>
+                      <ul className="jobs-detail__program-list">
+                        {recommendedPrograms.map((program, index) => (
+                          <li key={`${program.sourceType || program.source_type}-${program.recordId || program.record_id}-${program.title}-${index}`}>
+                            <strong>{program.title}</strong>
+                            {program.reason ? <p>{program.reason}</p> : null}
+                            {program.providerName || program.provider_name || program.startDate || program.start_date ? (
+                              <span>
+                                {[program.providerName || program.provider_name, program.startDate || program.start_date].filter(Boolean).join(' · ')}
+                              </span>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
                     </section>
                   ) : null}
                 </div>
