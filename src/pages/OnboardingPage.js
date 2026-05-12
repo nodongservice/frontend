@@ -198,7 +198,7 @@ const detailProfileGroups = [
   },
   {
     label: '세부 경력',
-    fields: ['careerDetail', 'projectExperience', 'careerGapReason']
+    fields: ['projectExperience', 'careerGapReason']
   },
   {
     label: '자격·포트폴리오',
@@ -948,8 +948,8 @@ function CompletionPanel({ summary, onBack, onProfile }) {
         </div>
         <div>
           <dt>추가 항목</dt>
-          <dd>{summary.remainingDetailGroupCount}개 묶음</dd>
-          <span>{summary.remainingDetailFieldCount}개 선택 정보</span>
+          <dd>{summary.remainingDetailFieldCount}개</dd>
+          <span>{summary.remainingDetailGroupCount}개 묶음 선택 정보</span>
         </div>
         <div>
           <dt>예상 시간</dt>
