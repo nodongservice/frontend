@@ -502,6 +502,16 @@ const getFirstInteger = (...values) => {
   return null;
 };
 
+const getBooleanValue = (value) => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true';
+  }
+  return Boolean(value);
+};
+
 const getJobPostId = (source, job) =>
   getFirstInteger(
     source?.jobPostId,
@@ -711,6 +721,7 @@ const normalizeMapJob = (job, aiResults, aiEnabled, matchedAiResult, profile = n
   const dueLabel = getDday(termDate);
   const dueDateText = dueLabel ? `${deadlineDate} 마감` : '';
   const id = getJobExternalId(job) || `${company}-${title}-${termDate || ''}`;
+  const postingId = getJobPostId(job, job);
   const geoLatitude = getGeoLatitude(job);
   const geoLongitude = getGeoLongitude(job);
   const commuteStats = resolveCommuteStats(job, aiResult, scoreDetail);
@@ -740,7 +751,10 @@ const normalizeMapJob = (job, aiResults, aiEnabled, matchedAiResult, profile = n
 
   return {
     id,
+    postingId,
     externalId: getJobExternalId(job) || '',
+    scrapCount: Number(getFirstPresentValue(job?.scrapCount, job?.scrap_count, aiResult?.scrapCount, aiResult?.scrap_count) || 0),
+    scrappedByMe: getBooleanValue(getFirstPresentValue(job?.scrappedByMe, job?.scrapped_by_me, aiResult?.scrappedByMe, aiResult?.scrapped_by_me)),
     source: job,
     company,
     title,
@@ -1681,6 +1695,21 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
     setReloadKey((current) => current + 1);
   }, []);
 
+  const markJobScrapped = useCallback((jobId) => {
+    setRecommendationState((prev) => ({
+      ...prev,
+      jobs: prev.jobs.map((job) =>
+        job.id === jobId
+          ? {
+              ...job,
+              scrappedByMe: true,
+              scrapCount: Number(job.scrapCount || 0) + 1
+            }
+          : job
+      )
+    }));
+  }, []);
+
   const applyFilters = useCallback((filters) => {
     setSelectedFilters(filters || {});
     setAppliedAiEnabled(isAiEnabled);
@@ -1738,6 +1767,7 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
     setShowSupportAgencies,
     toggleAiScoring,
     applyFilters,
-    reloadRecommendations
+    reloadRecommendations,
+    markJobScrapped
   };
 }

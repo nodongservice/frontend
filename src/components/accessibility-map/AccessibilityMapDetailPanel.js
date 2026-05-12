@@ -40,7 +40,9 @@ export function AccessibilityMapDetailPanel({
   explanation,
   explanationViewState,
   explanationErrorMessage,
-  onChangeTab
+  onChangeTab,
+  onScrap,
+  scrapErrorMessage = ''
 }) {
   const accessibility = job.accessibilityByPersona[selectedPersonaKey];
   const recommendationReasons = explanation?.recommendationReasons || explanation?.aiResponse?.result?.recommendation_reasons || [];
@@ -288,8 +290,17 @@ export function AccessibilityMapDetailPanel({
       </div>
 
       <footer className="accessibility-map__action-bar">
-        <button type="button" className="accessibility-map__icon-action" aria-label="관심 공고 저장 API 확인 필요" disabled>
-          ♡
+        {scrapErrorMessage ? (
+          <div className="accessibility-map__scrap-error" role="alert">{scrapErrorMessage}</div>
+        ) : null}
+        <button
+          type="button"
+          className={`accessibility-map__icon-action${job.scrappedByMe ? ' is-scrapped' : ''}`}
+          aria-label={job.scrappedByMe ? '스크랩 완료된 공고' : '공고 스크랩'}
+          disabled={!job.postingId || job.scrappedByMe}
+          onClick={onScrap}
+        >
+          {job.scrappedByMe ? '♥' : '♡'}
         </button>
         <button
           type="button"

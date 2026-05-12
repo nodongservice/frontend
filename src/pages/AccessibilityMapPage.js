@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMapSearch } from '../accessibility/MapSearchContext';
+import { postingApi } from '../api/postingApi';
 import { AccessibilityMapCanvas } from '../components/accessibility-map/AccessibilityMapCanvas';
 import { AccessibilityMapDetailPanel } from '../components/accessibility-map/AccessibilityMapDetailPanel';
 import { TrafficFilterPanel } from '../components/accessibility-map/TrafficFilterPanel';
@@ -30,8 +31,38 @@ function MapLoadingModal({ isOpen }) {
   );
 }
 
+function MapScrapConfirmModal({ pending, onConfirm, onClose }) {
+  return (
+    <div className="login-modal-backdrop" onMouseDown={(event) => {
+      if (event.target === event.currentTarget && !pending) {
+        onClose();
+      }
+    }}>
+      <section className="login-modal logout-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="map-scrap-confirm-title">
+        <button type="button" className="login-modal__close" onClick={onClose} aria-label="스크랩 확인 창 닫기" disabled={pending}>
+          닫기
+        </button>
+        <div className="login-modal__body logout-confirm-modal__body">
+          <div className="login-modal__heading">
+            <h2 id="map-scrap-confirm-title" className="login-modal__title">스크랩 확인</h2>
+            <p>이 공고를 스크랩하시겠습니까?</p>
+          </div>
+          <div className="logout-confirm-modal__actions">
+            <button type="button" className="secondary-button" onClick={onClose} disabled={pending}>
+              취소
+            </button>
+            <button type="button" className="primary-button" onClick={onConfirm} disabled={pending}>
+              {pending ? '처리 중' : '스크랩'}
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export function AccessibilityMapPage() {
-  const { isAuthenticated } = useAuth();
+  const { callWithAuth, isAuthenticated } = useAuth();
   const { submittedQuery, setSearchEnabled, clearQuery } = useMapSearch();
   const {
     jobs,
@@ -68,10 +99,16 @@ export function AccessibilityMapPage() {
     setSelectedTab,
     setSortMode,
     setShowSupportAgencies,
-    reloadRecommendations
+    reloadRecommendations,
+    markJobScrapped
   } = useAccessibilityMap({ searchQuery: submittedQuery });
   const [currentLocation, setCurrentLocation] = useState(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [scrapState, setScrapState] = useState({
+    confirmOpen: false,
+    pending: false,
+    error: ''
+  });
 
   const requestCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -113,6 +150,32 @@ export function AccessibilityMapPage() {
   const openLoginModal = useCallback(() => {
     setIsLoginModalOpen(true);
   }, []);
+  const openScrapConfirm = useCallback(() => {
+    if (isGuestUser) {
+      openLoginModal();
+      return;
+    }
+    setScrapState({ confirmOpen: true, pending: false, error: '' });
+  }, [isGuestUser, openLoginModal]);
+  const handleScrapConfirm = useCallback(async () => {
+    if (!selectedJob?.postingId || scrapState.pending) {
+      return;
+    }
+
+    setScrapState({ confirmOpen: true, pending: true, error: '' });
+
+    try {
+      await callWithAuth((accessToken, signal) => postingApi.scrapPosting(accessToken, selectedJob.postingId, signal));
+      markJobScrapped(selectedJob.id);
+      setScrapState({ confirmOpen: false, pending: false, error: '' });
+    } catch (error) {
+      setScrapState({
+        confirmOpen: true,
+        pending: false,
+        error: error.message || '스크랩 처리에 실패했습니다.'
+      });
+    }
+  }, [callWithAuth, markJobScrapped, scrapState.pending, selectedJob]);
 
   useEffect(() => {
     setSearchEnabled(hasAppliedConditions);
@@ -178,6 +241,8 @@ export function AccessibilityMapPage() {
             explanationViewState={explanationViewState}
             explanationErrorMessage={explanationErrorMessage}
             onChangeTab={setSelectedTab}
+            onScrap={openScrapConfirm}
+            scrapErrorMessage={scrapState.error}
           />
         ) : (
           <aside className="accessibility-map__detail-panel">
@@ -201,6 +266,13 @@ export function AccessibilityMapPage() {
           </aside>
         )}
       </div>
+      {scrapState.confirmOpen ? (
+        <MapScrapConfirmModal
+          pending={scrapState.pending}
+          onConfirm={handleScrapConfirm}
+          onClose={() => setScrapState((prev) => ({ ...prev, confirmOpen: false }))}
+        />
+      ) : null}
       {isLoginModalOpen ? <LoginModal onClose={() => setIsLoginModalOpen(false)} /> : null}
     </main>
   );
