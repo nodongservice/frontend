@@ -291,7 +291,10 @@ export function TrafficFilterPanel({
       </div>
 
       <div className="accessibility-map__results-header">
-        <h3>검색 결과 {resultCount}개{totalJobCount > resultCount ? ` / 전체 ${totalJobCount}개` : ''}</h3>
+        <h3>
+          <span>검색 결과 {resultCount}개</span>
+          {totalJobCount > resultCount ? <span> / 전체 {totalJobCount}개</span> : null}
+        </h3>
         <div ref={sortMenuRef} className={`accessibility-map__sort${isSortMenuOpen ? ' is-open' : ''}`}>
           <button
             type="button"

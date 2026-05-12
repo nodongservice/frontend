@@ -693,9 +693,15 @@ function PopularPostingDetailModal({
                   <h3>AI 직무 적합도 및 추천 설명</h3>
                   {typeof quickFitScore === 'number' ? (
                     <div className="jobs-detail__score-card">
-                      <span>직무 적합도 점수</span>
-                      <strong>{quickFitScore}점</strong>
-                      <em>{quickFitScore >= 70 ? '적합' : '검토 필요'}</em>
+                      <div className="jobs-detail__score-ring" aria-label={`직무 적합도 ${quickFitScore}점`}>
+                        <strong>{quickFitScore}</strong>
+                        <span>/ 100</span>
+                      </div>
+                      <div className="jobs-detail__score-summary">
+                        <span>직무 적합도 점수</span>
+                        <em>{quickFitScore >= 70 ? '적합' : '검토 필요'}</em>
+                        <p>{quickFitScore >= 70 ? '프로필 직무와 공고 조건이 유사합니다.' : '지원 전 직무 조건 확인이 필요합니다.'}</p>
+                      </div>
                     </div>
                   ) : null}
                   {quickExplainState.status === 'loading' ? (
@@ -1809,6 +1815,15 @@ export function MainPage() {
             </div>
 
             <section className="home-quick__results" aria-label="퀵 추천 결과">
+              {!isGuestUser && quickState.status === 'success' ? (
+                <div className="accessibility-map__results-header home-quick__results-header">
+                  <h3>
+                    <span>검색 결과 {filteredQuickJobs.length}개</span>
+                    {quickState.rawJobs.length > filteredQuickJobs.length ? <span> / 전체 {quickState.rawJobs.length}개</span> : null}
+                  </h3>
+                  <span>{appliedAiEnabled ? '직무 적합도 높은순' : '최신순'}</span>
+                </div>
+              ) : null}
               {isGuestUser ? <div className="home-feedback" role="status">로그인 후 퀵 맞춤 일자리 추천 결과를 확인할 수 있습니다.</div> : null}
               {!isGuestUser && profilesState.status === 'loading' ? <div className="home-feedback" role="status">프로필을 불러오는 중입니다.</div> : null}
               {!isGuestUser && profilesState.status === 'error' ? <div className="home-feedback is-error" role="alert">{profilesState.error}</div> : null}
