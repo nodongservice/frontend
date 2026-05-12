@@ -217,15 +217,26 @@ export function AccessibilityMapDetailPanel({
               ) : null}
               {explanationViewState === 'success' ? (
                 <div className="jobs-detail__explanation-card">
+                  <span className="jobs-detail__eyebrow">추천 요약</span>
                   <strong>{shortSummary || '추천 설명을 확인했습니다.'}</strong>
-                  <ul className="jobs-detail__status-list">
-                    {[...recommendationReasons, ...cautionPoints, ...checklist].map((item, index) => (
-                      <li key={`${item}-${index}`}>
-                        <span>{index < recommendationReasons.length ? '추천 이유' : index < recommendationReasons.length + cautionPoints.length ? '주의점' : '체크리스트'}</span>
-                        <p>{item}</p>
-                      </li>
-                    ))}
-                  </ul>
+                  {recommendationReasons.length ? (
+                    <section className="jobs-detail__explanation-section">
+                      <h4>왜 추천되었나요?</h4>
+                      <ul>{recommendationReasons.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ul>
+                    </section>
+                  ) : null}
+                  {checklist.length ? (
+                    <section className="jobs-detail__explanation-section">
+                      <h4>지원 전에 확인해보면 좋아요</h4>
+                      <ul>{checklist.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ul>
+                    </section>
+                  ) : null}
+                  {cautionPoints.length ? (
+                    <section className="jobs-detail__explanation-section">
+                      <h4>참고해주세요</h4>
+                      <ul>{cautionPoints.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ul>
+                    </section>
+                  ) : null}
                 </div>
               ) : null}
             </section>

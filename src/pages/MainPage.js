@@ -708,43 +708,37 @@ function PopularPostingDetailModal({
                   {quickExplainState.status === 'success' && quickExplainState.data ? (
                     <>
                       {quickExplainState.data.shortSummary ? (
-                        <div className="jobs-detail__notice">{quickExplainState.data.shortSummary}</div>
+                        <div className="jobs-detail__notice">
+                          <span className="jobs-detail__eyebrow">추천 요약</span>
+                          {quickExplainState.data.shortSummary}
+                        </div>
                       ) : null}
                       {Array.isArray(quickExplainState.data.recommendationReasons) && quickExplainState.data.recommendationReasons.length ? (
                         <div className="jobs-detail__section jobs-detail__explanation-card">
-                          <h3>추천 이유</h3>
-                          <ul className="jobs-detail__status-list">
+                          <h3>왜 추천되었나요?</h3>
+                          <ul className="jobs-detail__bullet-list">
                             {quickExplainState.data.recommendationReasons.map((item) => (
-                              <li key={`reason-${item}`}>
-                                <span>추천 이유</span>
-                                <p>{item}</p>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
-                      {Array.isArray(quickExplainState.data.cautionPoints) && quickExplainState.data.cautionPoints.length ? (
-                        <div className="jobs-detail__section jobs-detail__explanation-card">
-                          <h3>주의 사항</h3>
-                          <ul className="jobs-detail__status-list">
-                            {quickExplainState.data.cautionPoints.map((item) => (
-                              <li key={`caution-${item}`}>
-                                <span>주의</span>
-                                <p>{item}</p>
-                              </li>
+                              <li key={`reason-${item}`}>{item}</li>
                             ))}
                           </ul>
                         </div>
                       ) : null}
                       {Array.isArray(quickExplainState.data.checklist) && quickExplainState.data.checklist.length ? (
                         <div className="jobs-detail__section jobs-detail__explanation-card">
-                          <h3>체크리스트</h3>
-                          <ul className="jobs-detail__status-list">
+                          <h3>지원 전에 확인해보면 좋아요</h3>
+                          <ul className="jobs-detail__bullet-list">
                             {quickExplainState.data.checklist.map((item) => (
-                              <li key={`check-${item}`}>
-                                <span>체크</span>
-                                <p>{item}</p>
-                              </li>
+                              <li key={`check-${item}`}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                      {Array.isArray(quickExplainState.data.cautionPoints) && quickExplainState.data.cautionPoints.length ? (
+                        <div className="jobs-detail__section jobs-detail__explanation-card">
+                          <h3>참고해주세요</h3>
+                          <ul className="jobs-detail__bullet-list">
+                            {quickExplainState.data.cautionPoints.map((item) => (
+                              <li key={`caution-${item}`}>{item}</li>
                             ))}
                           </ul>
                         </div>

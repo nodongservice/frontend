@@ -99,11 +99,11 @@ export function JobDetailPanel({
     ['담당기관', job.companyInfo.agency]
   ];
   const llmExplanation = normalizeExplanation(explanation);
-  const llmExplanationItems = [
-    ...llmExplanation.recommendationReasons.map((text) => ['추천 이유', text]),
-    ...llmExplanation.cautionPoints.map((text) => ['주의점', text]),
-    ...llmExplanation.checklist.map((text) => ['체크리스트', text])
-  ];
+  const llmExplanationSections = [
+    ['왜 추천되었나요?', llmExplanation.recommendationReasons],
+    ['지원 전에 확인해보면 좋아요', llmExplanation.checklist],
+    ['참고해주세요', llmExplanation.cautionPoints]
+  ].filter(([, items]) => items.length);
 
   return (
     <aside className="jobs-detail" aria-label="선택된 공고 상세">
@@ -204,17 +204,20 @@ export function JobDetailPanel({
                 <NoticeBox>{explanationErrorMessage || '추천 설명을 불러오지 못했습니다.'}</NoticeBox>
               ) : null}
               {explanationViewState === 'success' ? (
-                llmExplanationItems.length ? (
+                llmExplanationSections.length ? (
                   <div className="jobs-detail__explanation-card">
+                    <span className="jobs-detail__eyebrow">추천 요약</span>
                     <strong>{llmExplanation.shortSummary || '추천 설명을 확인했습니다.'}</strong>
-                    <ul className="jobs-detail__status-list">
-                      {llmExplanationItems.map(([label, text], index) => (
-                        <li key={`${label}-${text}-${index}`}>
-                          <span>{label}</span>
-                          <p>{text}</p>
-                        </li>
-                      ))}
-                    </ul>
+                    {llmExplanationSections.map(([title, items]) => (
+                      <section className="jobs-detail__explanation-section" key={title}>
+                        <h4>{title}</h4>
+                        <ul>
+                          {items.map((text, index) => (
+                            <li key={`${title}-${text}-${index}`}>{text}</li>
+                          ))}
+                        </ul>
+                      </section>
+                    ))}
                   </div>
                 ) : (
                   <NoticeBox>추천 설명 세부 항목이 없습니다. 공고 정보와 적합도 점수를 함께 확인해주세요.</NoticeBox>
