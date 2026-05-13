@@ -173,7 +173,7 @@ function AccountField({ id, label, type, value, readOnly = false }) {
   return (
     <label className="settings-field settings-field--compact" htmlFor={id}>
       <span>{label}</span>
-      <input id={id} type={type} value={value} readOnly={readOnly} aria-readonly={readOnly} />
+      <input id={id} type={type} value={value ?? ''} readOnly={readOnly} aria-readonly={readOnly} />
     </label>
   );
 }

@@ -21,17 +21,20 @@ function MapLoadingModal({ isOpen }) {
   return (
     <div className="home-loading-modal" role="status" aria-live="polite" aria-label="지도 추천 결과를 준비하고 있습니다.">
       <div className="home-loading-modal__panel">
-        <strong className="jobs-feedback--animated-dots">
-          로딩중
-          <span className="jobs-feedback__dots" aria-hidden="true" />
-        </strong>
+        <div className="loading-spinner" aria-hidden="true" />
+        <h2>접근성 지도 분석 중입니다</h2>
         <p>요청이 완료될 때까지 이 화면을 다시 열어도 진행 상태가 이어집니다.</p>
       </div>
     </div>
   );
 }
 
-function MapScrapConfirmModal({ pending, onConfirm, onClose }) {
+function MapScrapConfirmModal({ pending, mode = 'scrap', onConfirm, onClose }) {
+  const isDeleteMode = mode === 'delete';
+  const title = isDeleteMode ? '스크랩 취소 확인' : '스크랩 확인';
+  const message = isDeleteMode ? '이 공고의 스크랩을 취소하시겠습니까?' : '이 공고를 스크랩하시겠습니까?';
+  const confirmLabel = isDeleteMode ? '스크랩 취소' : '스크랩';
+
   return (
     <div className="login-modal-backdrop" onMouseDown={(event) => {
       if (event.target === event.currentTarget && !pending) {
@@ -44,15 +47,15 @@ function MapScrapConfirmModal({ pending, onConfirm, onClose }) {
         </button>
         <div className="login-modal__body logout-confirm-modal__body">
           <div className="login-modal__heading">
-            <h2 id="map-scrap-confirm-title" className="login-modal__title">스크랩 확인</h2>
-            <p>이 공고를 스크랩하시겠습니까?</p>
+            <h2 id="map-scrap-confirm-title" className="login-modal__title">{title}</h2>
+            <p>{message}</p>
           </div>
           <div className="logout-confirm-modal__actions">
             <button type="button" className="secondary-button" onClick={onClose} disabled={pending}>
               취소
             </button>
             <button type="button" className="primary-button" onClick={onConfirm} disabled={pending}>
-              {pending ? '처리 중' : '스크랩'}
+              {pending ? '처리 중' : confirmLabel}
             </button>
           </div>
         </div>
@@ -106,6 +109,7 @@ export function AccessibilityMapPage() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [scrapState, setScrapState] = useState({
     confirmOpen: false,
+    mode: 'scrap',
     pending: false,
     error: ''
   });
@@ -155,27 +159,39 @@ export function AccessibilityMapPage() {
       openLoginModal();
       return;
     }
-    setScrapState({ confirmOpen: true, pending: false, error: '' });
-  }, [isGuestUser, openLoginModal]);
+    setScrapState({
+      confirmOpen: true,
+      mode: selectedJob?.scrappedByMe ? 'delete' : 'scrap',
+      pending: false,
+      error: ''
+    });
+  }, [isGuestUser, openLoginModal, selectedJob?.scrappedByMe]);
   const handleScrapConfirm = useCallback(async () => {
     if (!selectedJob?.postingId || scrapState.pending) {
       return;
     }
 
-    setScrapState({ confirmOpen: true, pending: true, error: '' });
+    const mode = scrapState.mode;
+    setScrapState((prev) => ({ ...prev, confirmOpen: true, pending: true, error: '' }));
 
     try {
-      await callWithAuth((accessToken, signal) => postingApi.scrapPosting(accessToken, selectedJob.postingId, signal));
-      markJobScrapped(selectedJob.id);
-      setScrapState({ confirmOpen: false, pending: false, error: '' });
+      if (mode === 'delete') {
+        await callWithAuth((accessToken, signal) => postingApi.deleteScrap(accessToken, selectedJob.postingId, signal));
+        markJobScrapped(selectedJob.id, false);
+      } else {
+        await callWithAuth((accessToken, signal) => postingApi.scrapPosting(accessToken, selectedJob.postingId, signal));
+        markJobScrapped(selectedJob.id, true);
+      }
+      setScrapState({ confirmOpen: false, mode: 'scrap', pending: false, error: '' });
     } catch (error) {
       setScrapState({
         confirmOpen: true,
+        mode,
         pending: false,
-        error: error.message || '스크랩 처리에 실패했습니다.'
+        error: error.message || (mode === 'delete' ? '스크랩 취소에 실패했습니다.' : '스크랩 처리에 실패했습니다.')
       });
     }
-  }, [callWithAuth, markJobScrapped, scrapState.pending, selectedJob]);
+  }, [callWithAuth, markJobScrapped, scrapState.mode, scrapState.pending, selectedJob]);
 
   useEffect(() => {
     setSearchEnabled(hasAppliedConditions);
@@ -229,6 +245,7 @@ export function AccessibilityMapPage() {
           onSelectProfile={setSelectedProfileId}
           onRequireLogin={openLoginModal}
           onRequestCurrentLocation={requestCurrentLocation}
+          onSelectMarker={setSelectedJobId}
           onToggleSupportAgencies={setShowSupportAgencies}
           onRetry={reloadRecommendations}
         />
@@ -269,8 +286,9 @@ export function AccessibilityMapPage() {
       {scrapState.confirmOpen ? (
         <MapScrapConfirmModal
           pending={scrapState.pending}
+          mode={scrapState.mode}
           onConfirm={handleScrapConfirm}
-          onClose={() => setScrapState((prev) => ({ ...prev, confirmOpen: false }))}
+          onClose={() => setScrapState((prev) => ({ ...prev, confirmOpen: false, pending: false }))}
         />
       ) : null}
       {isLoginModalOpen ? <LoginModal onClose={() => setIsLoginModalOpen(false)} /> : null}

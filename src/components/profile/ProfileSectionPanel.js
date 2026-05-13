@@ -689,10 +689,10 @@ function RequiredMark() {
   return <em aria-label="필수">*</em>;
 }
 
-function Input({ icon, suffix, onChange, ...props }) {
+function Input({ icon, suffix, onChange, value, ...props }) {
   return (
     <span className="profile-input-wrap">
-      <input className="profile-input" {...props} onChange={(event) => onChange(event.target.value)} />
+      <input className="profile-input" {...props} value={value ?? ''} onChange={(event) => onChange(event.target.value)} />
       {suffix ? <span className="profile-input-suffix">{suffix}</span> : null}
       {icon ? <img src={icon} alt="입력 항목 아이콘" /> : null}
     </span>
