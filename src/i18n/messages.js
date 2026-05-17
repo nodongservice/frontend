@@ -4,12 +4,15 @@ export const MESSAGES = Object.freeze({
       loadingTitle: '화면 준비',
       loadingDescription: '요청한 화면을 불러오고 있습니다.',
       loadingLabel: '화면을 불러오는 중입니다.',
-      languageSelect: '언어 선택'
+      languageSelect: '언어 선택',
+      translateButton: '번역'
     },
     header: {
       brandLabel: 'Bridgework 홈페이지로 이동',
       searchLabel: '접근성 지도 출발지 검색',
       searchInputLabel: '접근성 지도 출발지 입력',
+      searchEnabledPlaceholder: '검색 결과 내 주소/회사/직무를 검색하세요.',
+      searchDisabledPlaceholder: '검색을 먼저 해주세요.',
       searchButtonLabel: '출발지 검색',
       userMenuLabel: '사용자 메뉴',
       login: '회원가입/로그인',
@@ -39,17 +42,20 @@ export const MESSAGES = Object.freeze({
       outsourcing: '개인정보 처리위탁 안내'
     }
   },
-  zh: {
+  'zh-CN': {
     common: {
       loadingTitle: '页面准备中',
       loadingDescription: '正在加载请求的页面。',
       loadingLabel: '正在加载页面。',
-      languageSelect: '选择语言'
+      languageSelect: '选择语言',
+      translateButton: '翻译'
     },
     header: {
       brandLabel: '前往 Bridgework 首页',
       searchLabel: '无障碍地图出发地搜索',
       searchInputLabel: '输入无障碍地图出发地',
+      searchEnabledPlaceholder: '搜索地址、公司或职位',
+      searchDisabledPlaceholder: '请先搜索。',
       searchButtonLabel: '搜索出发地',
       userMenuLabel: '用户菜单',
       login: '注册/登录',
@@ -84,12 +90,15 @@ export const MESSAGES = Object.freeze({
       loadingTitle: 'Preparing Screen',
       loadingDescription: 'Loading the requested screen.',
       loadingLabel: 'Loading screen.',
-      languageSelect: 'Select language'
+      languageSelect: 'Select language',
+      translateButton: 'Translate'
     },
     header: {
       brandLabel: 'Go to the Bridgework homepage',
       searchLabel: 'Accessibility map origin search',
       searchInputLabel: 'Enter an accessibility map origin',
+      searchEnabledPlaceholder: 'Search address, company, or role',
+      searchDisabledPlaceholder: 'Search first.',
       searchButtonLabel: 'Search origin',
       userMenuLabel: 'User menu',
       login: 'Sign up / Log in',
@@ -124,12 +133,15 @@ export const MESSAGES = Object.freeze({
       loadingTitle: '画面準備',
       loadingDescription: 'リクエストされた画面を読み込んでいます。',
       loadingLabel: '画面を読み込んでいます。',
-      languageSelect: '言語を選択'
+      languageSelect: '言語を選択',
+      translateButton: '翻訳'
     },
     header: {
       brandLabel: 'Bridgework ホームページへ移動',
       searchLabel: 'アクセシビリティ地図の出発地検索',
       searchInputLabel: 'アクセシビリティ地図の出発地を入力',
+      searchEnabledPlaceholder: '住所・会社・職務を検索',
+      searchDisabledPlaceholder: '先に検索してください。',
       searchButtonLabel: '出発地を検索',
       userMenuLabel: 'ユーザーメニュー',
       login: '登録/ログイン',
