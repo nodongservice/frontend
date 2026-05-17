@@ -39,7 +39,8 @@ export const MESSAGES = Object.freeze({
       privacyConsent: '개인정보 수집·이용 동의',
       marketingConsent: '마케팅 정보 수신 동의',
       thirdParty: '제3자 제공 동의',
-      outsourcing: '개인정보 처리위탁 안내'
+      outsourcing: '개인정보 처리위탁 안내',
+      socialOpeningNotice: '현재 SNS 채널을 준비하고 있습니다.'
     }
   },
   'zh-CN': {
@@ -82,7 +83,8 @@ export const MESSAGES = Object.freeze({
       privacyConsent: '个人信息收集和使用同意',
       marketingConsent: '营销信息接收同意',
       thirdParty: '第三方提供同意',
-      outsourcing: '个人信息委托处理说明'
+      outsourcing: '个人信息委托处理说明',
+      socialOpeningNotice: '社交频道正在准备中。'
     }
   },
   en: {
@@ -125,7 +127,8 @@ export const MESSAGES = Object.freeze({
       privacyConsent: 'Personal Information Collection and Use Consent',
       marketingConsent: 'Marketing Communications Consent',
       thirdParty: 'Third-party Provision Consent',
-      outsourcing: 'Personal Information Processing Outsourcing Notice'
+      outsourcing: 'Personal Information Processing Outsourcing Notice',
+      socialOpeningNotice: 'Social channels are being prepared.'
     }
   },
   ja: {
@@ -168,7 +171,8 @@ export const MESSAGES = Object.freeze({
       privacyConsent: '個人情報の収集・利用同意',
       marketingConsent: 'マーケティング情報受信同意',
       thirdParty: '第三者提供同意',
-      outsourcing: '個人情報処理委託案内'
+      outsourcing: '個人情報処理委託案内',
+      socialOpeningNotice: 'ソーシャルチャンネルを準備中です。'
     }
   }
 });

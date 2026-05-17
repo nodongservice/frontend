@@ -12289,13 +12289,15 @@ html[data-bw-reduce-motion='off'] .home-section-entrance--quick {
 }
 
 .settings-contact-card--actions {
-  grid-template-columns: auto minmax(220px, 1fr) auto auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  gap: 14px 24px;
 }
 
 .settings-kakao-button {
   display: inline-flex;
-  width: 206px;
+  flex: 0 0 auto;
   min-width: 206px;
   min-height: 54px;
   margin-top: 0;
@@ -12312,6 +12314,16 @@ html[data-bw-reduce-motion='off'] .home-section-entrance--quick {
   line-height: 1;
   white-space: nowrap;
   box-shadow: none;
+}
+
+.settings-contact-card--actions > span {
+  min-width: 0;
+  flex: 1 1 220px;
+  overflow-wrap: anywhere;
+}
+
+.settings-contact-card--actions > span:first-of-type {
+  flex-basis: 300px;
 }
 
 .settings-kakao-button img {
@@ -12355,15 +12367,26 @@ html[data-bw-reduce-motion='off'] .home-section-entrance--quick {
 
 @media (max-width: 1280px) {
   .settings-contact-card--actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: flex-start;
   }
 }
 
 @media (max-width: 900px) {
   .settings-overview,
-  .settings-accessibility-layout .settings-toggle-list--compact,
-  .settings-contact-card--actions {
+  .settings-accessibility-layout .settings-toggle-list--compact {
     grid-template-columns: 1fr;
+  }
+
+  .settings-contact-card--actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-kakao-button,
+  .settings-contact-card--actions > span,
+  .settings-contact-card--actions > span:first-of-type {
+    width: 100%;
+    flex-basis: auto;
   }
 }
 
