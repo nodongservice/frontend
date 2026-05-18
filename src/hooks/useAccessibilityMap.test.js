@@ -133,14 +133,56 @@ describe('buildRecommendationStateFromPayload', () => {
       '접근 양호'
     ]);
     expect(state.jobs[0].accessibilityByPersona.wheelchair.detailItems).toContainEqual([
-      '근무지 좌표',
-      '근무지 위치가 지도에 표시됩니다. 좌표는 위도 37.5665, 경도 126.9780입니다.',
+      '근무지 위치 기준',
+      '근무지는 지도에 표시됩니다. 실제 출입구, 건물 진입 동선, 가장 가까운 정류장 또는 역은 지원 전 지도에서 함께 확인해주세요.',
       '접근 양호'
     ]);
     expect(state.jobs[0].accessibilityByPersona.wheelchair.detailItems).toContainEqual([
       '교통 접근 근거',
       '주변 대중교통/이동지원 데이터는 추가 확인이 필요합니다.',
       '주의 필요'
+    ]);
+  });
+
+  it('shows nearby station access instead of raw work coordinates when station evidence exists', () => {
+    const state = buildRecommendationStateFromPayload({
+      aiEnabled: true,
+      aiResponse: {
+        result: {
+          results: [
+            {
+              total_score: 82,
+              evidence_items: [
+                {
+                  source_type: 'SEOUL_SUBWAY_ENTRANCE_LIFT',
+                  source_name: '서울시 지하철 출입구 리프트',
+                  distance_meters: 180,
+                  fields: {
+                    station_name: '시청역'
+                  }
+                }
+              ],
+              score_detail: {
+                accessibility_score: 81
+              },
+              job: {
+                external_id: 'job-station-access',
+                job_title: '사무 보조원',
+                company_name: '브릿지워크',
+                work_address: '서울특별시 중구 세종대로 1',
+                work_lat: 37.5665,
+                work_lng: 126.978
+              }
+            }
+          ]
+        }
+      }
+    }, true);
+
+    expect(state.jobs[0].accessibilityByPersona.wheelchair.detailItems).toContainEqual([
+      '인근 역 접근',
+      '근무지 주변 약 180m 거리의 시청역 접근성 데이터를 확인했습니다. 실제 출입구, 엘리베이터, 보행 동선은 지원 전 지도와 현장에서 함께 확인해주세요.',
+      '접근 양호'
     ]);
   });
 
@@ -218,6 +260,90 @@ describe('buildRecommendationStateFromPayload', () => {
       '교통 접근 근거',
       '근무지 주변 대중교통 또는 교통약자 이동지원 데이터가 1건, 최근접 약 120m 확인됩니다.',
       '접근 양호'
+    ]);
+  });
+
+  it('uses saved profile coordinates when transit time is not available', () => {
+    const state = buildRecommendationStateFromPayload({
+      aiEnabled: true,
+      jobs: [
+        {
+          jobPostId: 1,
+          jobNm: '사무 보조원',
+          busplaName: '브릿지워크',
+          compAddr: '서울특별시 중구 세종대로 1',
+          geoLatitude: 37.5665,
+          geoLongitude: 126.978
+        }
+      ],
+      aiResponse: {
+        result: {
+          results: [
+            {
+              total_score: 82,
+              score_detail: {
+                accessibility_score: 81
+              },
+              job: {
+                job_post_id: 1,
+                job_title: '사무 보조원'
+              }
+            }
+          ]
+        }
+      }
+    }, true, {
+      homeLat: 37.5651,
+      homeLng: 126.98955,
+      detailAddress: '서울특별시 중구'
+    });
+
+    expect(state.jobs[0].commuteMinutes).not.toBe('-');
+    expect(state.jobs[0].commuteMinutes).toBe(25);
+  });
+
+  it('reads commute time from ODsay evidence fields when transit_time is omitted', () => {
+    const state = buildRecommendationStateFromPayload({
+      aiEnabled: true,
+      aiResponse: {
+        result: {
+          results: [
+            {
+              total_score: 82,
+              evidence_items: [
+                {
+                  source_type: 'ODSAY_TRANSIT_TIME',
+                  source_name: 'ODsay 대중교통 길찾기',
+                  description: 'ODsay 대중교통 길찾기 예상 소요시간을 조회했습니다.',
+                  fields: {
+                    duration_minutes: 47,
+                    transfer_count: 1,
+                    walk_distance_meters: 620
+                  }
+                }
+              ],
+              score_detail: {
+                accessibility_score: 81
+              },
+              job: {
+                external_id: 'job-odsay-evidence',
+                job_title: '사무 보조원',
+                company_name: '브릿지워크',
+                work_address: '서울특별시 중구 세종대로 1',
+                work_lat: 37.5665,
+                work_lng: 126.978
+              }
+            }
+          ]
+        }
+      }
+    }, true);
+
+    expect(state.jobs[0].commuteMinutes).toBe(47);
+    expect(state.jobs[0].accessibilityByPersona.wheelchair.commuteStats).toEqual([
+      '총 47분',
+      '환승 1회',
+      '도보 620m'
     ]);
   });
 

@@ -345,6 +345,15 @@ const getAddressDistrict = (address) =>
 
 const getAddressCoordinate = (address) => SEOUL_DISTRICT_COORDINATES[getAddressDistrict(address)] || null;
 
+const getProfileHomeCoordinate = (profile) => {
+  const latitude = toNumberOrNull(getFirstPresentValue(profile?.homeLat, profile?.home_lat));
+  const longitude = toNumberOrNull(getFirstPresentValue(profile?.homeLng, profile?.home_lng));
+
+  return latitude !== null && longitude !== null
+    ? { latitude, longitude }
+    : null;
+};
+
 const getDistanceKm = (from, to) => {
   if (!from || !to) {
     return null;
@@ -396,8 +405,8 @@ const estimateCommuteMinutes = (profile, job, commuteStats) => {
     return providedMinutes;
   }
 
-  const homeAddress = getFirstPresentValue(profile?.detailAddress, profile?.address);
-  const homeCoordinate = getAddressCoordinate(homeAddress);
+  const homeAddress = getFirstPresentValue(profile?.detailAddress, profile?.address, profile?.homeGeocodedAddress, profile?.home_geocoded_address);
+  const homeCoordinate = getProfileHomeCoordinate(profile) || getAddressCoordinate(homeAddress);
   const workLatitude = toNumberOrNull(getGeoLatitude(job));
   const workLongitude = toNumberOrNull(getGeoLongitude(job));
   const workCoordinate = workLatitude !== null && workLongitude !== null
@@ -572,6 +581,97 @@ const formatEvidenceDistance = (distanceMeters) => {
 
 const getEvidenceDistance = (item) => item?.distance_meters ?? item?.distanceMeters;
 
+const STATION_ACCESS_SOURCE_TYPES = [
+  'RAIL_WHEELCHAIR_LIFT',
+  'RAIL_WHEELCHAIR_LIFT_MOVEMENT',
+  'SEOUL_WHEELCHAIR_LIFT',
+  'SEOUL_TRANSPORT_WEAK_WHEELCHAIR_LIFT',
+  'SEOUL_SUBWAY_ENTRANCE_LIFT',
+  'SEOUL_WHEELCHAIR_RAMP_STATUS',
+  'KORAIL_WEEK_PERSON_FACILITIES'
+];
+
+const getEvidenceFieldValue = (item, fieldNames) => {
+  const fields = item?.fields || {};
+
+  for (const fieldName of fieldNames) {
+    const value = getFirstPresentValue(fields[fieldName], item?.[fieldName]);
+    const text = toNullableText(value);
+    if (text) {
+      return text;
+    }
+  }
+
+  return '';
+};
+
+const normalizeStationName = (value) => {
+  const text = toNullableText(value);
+  if (!text) {
+    return '';
+  }
+
+  return text.endsWith('역') ? text : `${text}역`;
+};
+
+const getNearestStationAccess = (evidenceItems) => {
+  const stationItems = normalizeEvidenceItems(evidenceItems)
+    .filter((item) => STATION_ACCESS_SOURCE_TYPES.includes(item?.source_type || item?.sourceType))
+    .map((item) => ({
+      name: normalizeStationName(
+        getEvidenceFieldValue(item, [
+          'station_name',
+          'stationName',
+          'SBWY_STN_NM',
+          'sbwy_stn_nm',
+          'STIN_NM',
+          'stin_nm',
+          'STN_NM',
+          'stn_nm',
+          '역명',
+          'name'
+        ])
+      ),
+      distanceMeters: toNumberOrNull(getEvidenceDistance(item))
+    }))
+    .filter((item) => item.name);
+
+  if (!stationItems.length) {
+    return null;
+  }
+
+  return stationItems.sort((left, right) => (left.distanceMeters ?? Infinity) - (right.distanceMeters ?? Infinity))[0];
+};
+
+const buildWorkLocationDetailItem = ({ geoLatitude, geoLongitude, evidenceItems }) => {
+  const nearestStation = getNearestStationAccess(evidenceItems);
+
+  if (nearestStation) {
+    const distanceText = formatEvidenceDistance(nearestStation.distanceMeters);
+    const distanceSuffix = distanceText ? ` ${distanceText} 거리의` : '';
+
+    return [
+      '인근 역 접근',
+      `근무지 주변${distanceSuffix} ${nearestStation.name} 접근성 데이터를 확인했습니다. 실제 출입구, 엘리베이터, 보행 동선은 지원 전 지도와 현장에서 함께 확인해주세요.`,
+      '접근 양호'
+    ];
+  }
+
+  if (geoLatitude && geoLongitude) {
+    return [
+      '근무지 위치 기준',
+      '근무지는 지도에 표시됩니다. 실제 출입구, 건물 진입 동선, 가장 가까운 정류장 또는 역은 지원 전 지도에서 함께 확인해주세요.',
+      '접근 양호'
+    ];
+  }
+
+  return [
+    '근무지 위치 기준',
+    '근무지 지도 위치 정보가 부족합니다. 실제 주소, 출입구, 주변 정류장 또는 역은 지원 전 별도로 확인해주세요.',
+    '주의 필요'
+  ];
+};
+
 const summarizeEvidenceGroup = (items, presentText, missingText) => {
   if (!items.length) {
     return missingText;
@@ -698,8 +798,26 @@ const formatWalkDistance = (value) => {
   return distanceValue >= 1000 ? `도보 ${(distanceValue / 1000).toFixed(1)}km` : `도보 ${Math.round(distanceValue)}m`;
 };
 
+const getTransitTimeFromEvidence = (evidenceItems) => {
+  const transitEvidence = normalizeEvidenceItems(evidenceItems).find((item) => {
+    const sourceType = String(item?.source_type || item?.sourceType || '').toUpperCase();
+    const fields = item?.fields || {};
+
+    return (
+      sourceType.includes('ODSAY') ||
+      fields.duration_minutes !== undefined ||
+      fields.durationMinutes !== undefined
+    );
+  });
+
+  return transitEvidence?.fields || {};
+};
+
 const resolveCommuteStats = (source, aiResult, scoreDetail) => {
-  const transitTime = aiResult?.transit_time || aiResult?.transitTime || {};
+  const transitTime =
+    aiResult?.transit_time ||
+    aiResult?.transitTime ||
+    getTransitTimeFromEvidence(aiResult?.evidence_items || aiResult?.evidenceItems);
   const totalMinutes = getFirstPresentValue(
     scoreDetail?.total_minutes,
     scoreDetail?.totalMinutes,
@@ -838,13 +956,7 @@ const normalizeMapJob = (job, aiResults, aiEnabled, matchedAiResult, profile = n
                 : `전체 추천 점수는 ${displayScore}점이고, 화면에는 ${grade}으로 표시됩니다.`,
               getAccessibilityStatusFromScore(displayScore)
             ],
-            [
-              '근무지 좌표',
-              geoLatitude && geoLongitude
-                ? `근무지 위치가 지도에 표시됩니다. 좌표는 위도 ${Number(geoLatitude).toFixed(4)}, 경도 ${Number(geoLongitude).toFixed(4)}입니다.`
-                : '근무지 좌표가 없어 지도 위치와 실제 주소를 함께 확인해야 합니다.',
-              geoLatitude && geoLongitude ? '접근 양호' : '주의 필요'
-            ],
+            buildWorkLocationDetailItem({ geoLatitude, geoLongitude, evidenceItems }),
             ...evidenceDetailItems
           ],
           source: evidenceSourceSummary

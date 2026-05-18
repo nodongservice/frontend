@@ -23,6 +23,17 @@ describe('recommendationExplanationText', () => {
     ).toBe('지원 조건은 대체로 맞습니다.');
   });
 
+  it('removes trailing caution confirmation sentence from LLM summaries', () => {
+    expect(
+      formatRecommendationExplanationText(
+        '(주)호텔롯데 롯데월드의 청소원은 종합 추천 점수 77점으로 안내되어 있어요. 공공 접근성/시설 관련 항목이 반영되어 있고, 장애인 구인 실시간 현황 원천 데이터가 확인됩니다. 다만 출입구와 실제 이동 동선 부분은 지원 전 확인이 필요합니다.',
+        77
+      )
+    ).toBe(
+      '(주)호텔롯데 롯데월드의 청소원은 종합 추천 점수 77점(B등급)으로 안내되어 있어요. 공공 접근성/시설 관련 항목이 반영되어 있고, 장애인 구인 실시간 현황 원천 데이터가 확인됩니다.'
+    );
+  });
+
   it('filters empty list items after formatting', () => {
     expect(
       formatRecommendationExplanationList([
