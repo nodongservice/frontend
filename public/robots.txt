@@ -49,6 +49,11 @@ Disallow: /ja/api
 Disallow: /zh/api
 
 # Public policy documents live below /settings/policies and are safe to crawl.
+Allow: /jobs/
+Allow: /ko/jobs/
+Allow: /en/jobs/
+Allow: /ja/jobs/
+Allow: /zh/jobs/
 Allow: /settings/policies/
 Allow: /ko/settings/policies/
 Allow: /en/settings/policies/

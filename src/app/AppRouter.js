@@ -16,6 +16,7 @@ const SignupPage = lazy(() => import('../pages/SignupPage').then((module) => ({ 
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
 const AccessibilityMapPage = lazy(() => import('../pages/AccessibilityMapPage').then((module) => ({ default: module.AccessibilityMapPage })));
 const JobsPage = lazy(() => import('../pages/JobsPage').then((module) => ({ default: module.JobsPage })));
+const JobSeoDetailPage = lazy(() => import('../pages/JobSeoDetailPage').then((module) => ({ default: module.JobSeoDetailPage })));
 const ProfilePage = lazy(() => import('../pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
 const TermsPage = lazy(() => import('../pages/TermsPage').then((module) => ({ default: module.TermsPage })));
 const PrivacyPage = lazy(() => import('../pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })));
@@ -87,6 +88,20 @@ function LocalizedNavigate({ to }) {
   return <Navigate to={localizePath(to)} replace />;
 }
 
+function JobsRoute() {
+  const { isAuthenticated, isInitializing } = useAuth();
+
+  if (isInitializing) {
+    return (
+      <PageShell title="공고 확인" description="공고 목록을 준비하고 있습니다.">
+        <LoadingView label="공고 목록 준비 중..." />
+      </PageShell>
+    );
+  }
+
+  return isAuthenticated ? <JobsPage /> : <MainPage />;
+}
+
 export function AppRouter() {
   return (
     <Suspense fallback={<RouteFallback />}>
@@ -97,6 +112,7 @@ export function AppRouter() {
         <Route path={ROUTE_PATHS.login} element={<LegacyRouteRedirect to={ROUTE_PATHS.root} />} />
         <Route path={ROUTE_PATHS.accessibilityMap} element={<LegacyRouteRedirect to={ROUTE_PATHS.accessibilityMap} />} />
         <Route path={ROUTE_PATHS.jobs} element={<LegacyRouteRedirect to={ROUTE_PATHS.jobs} />} />
+        <Route path={ROUTE_PATHS.jobDetail} element={<LegacyRouteRedirect to={ROUTE_PATHS.jobDetail} />} />
         <Route path={ROUTE_PATHS.signup} element={<LegacyRouteRedirect to={ROUTE_PATHS.signup} />} />
         <Route path={ROUTE_PATHS.profile} element={<LegacyRouteRedirect to={ROUTE_PATHS.profile} />} />
         <Route path={ROUTE_PATHS.myProfile} element={<LegacyRouteRedirect to={ROUTE_PATHS.myProfile} />} />
@@ -109,8 +125,9 @@ export function AppRouter() {
         <Route path={LOCALIZED_ROUTE_PATHS.about} element={<LocaleRoute><AboutPage /></LocaleRoute>} />
         <Route path={LOCALIZED_ROUTE_PATHS.faq} element={<LocaleRoute><FaqPage /></LocaleRoute>} />
         <Route path={LOCALIZED_ROUTE_PATHS.login} element={<LocaleRoute><LocalizedNavigate to={ROUTE_PATHS.root} /></LocaleRoute>} />
-        <Route path={LOCALIZED_ROUTE_PATHS.accessibilityMap} element={<LocaleRoute><AuthRoute><AccessibilityMapPage /></AuthRoute></LocaleRoute>} />
-        <Route path={LOCALIZED_ROUTE_PATHS.jobs} element={<LocaleRoute><AuthRoute><JobsPage /></AuthRoute></LocaleRoute>} />
+        <Route path={LOCALIZED_ROUTE_PATHS.accessibilityMap} element={<LocaleRoute><AccessibilityMapPage /></LocaleRoute>} />
+        <Route path={LOCALIZED_ROUTE_PATHS.jobs} element={<LocaleRoute><JobsRoute /></LocaleRoute>} />
+        <Route path={LOCALIZED_ROUTE_PATHS.jobDetail} element={<LocaleRoute><JobSeoDetailPage /></LocaleRoute>} />
         <Route
           path={AUTH_PROVIDER_ROUTES.KAKAO.callbackPath}
           element={<OAuthCallbackPage provider={AUTH_PROVIDER_ROUTES.KAKAO.provider} />}

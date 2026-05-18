@@ -235,6 +235,7 @@ export function AccessibilityMapDetailPanel({
   explanation,
   explanationViewState,
   explanationErrorMessage,
+  isGuestUser = false,
   onChangeTab,
   onScrap,
   scrapErrorMessage = ''
@@ -355,7 +356,13 @@ export function AccessibilityMapDetailPanel({
                       <strong>{normalizedShortSummary || '추천 설명을 확인했습니다.'}</strong>
                     </>
                   ) : null}
-                  {explanationViewState !== 'loading' && explanationViewState !== 'error' && explanationViewState !== 'success' ? (
+                  {isGuestUser && explanationViewState !== 'loading' && explanationViewState !== 'error' && explanationViewState !== 'success' ? (
+                    <>
+                      <span className="jobs-detail__eyebrow">회원 전용 AI 설명</span>
+                      <strong>로그인하면 개인 조건을 반영한 AI 추천 설명을 확인할 수 있어요.</strong>
+                    </>
+                  ) : null}
+                  {!isGuestUser && explanationViewState !== 'loading' && explanationViewState !== 'error' && explanationViewState !== 'success' ? (
                     <strong>추천 요약을 불러오면 이곳에 표시됩니다.</strong>
                   ) : null}
                 </div>

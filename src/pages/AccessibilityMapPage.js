@@ -264,6 +264,7 @@ export function AccessibilityMapPage() {
             explanation={explanation}
             explanationViewState={explanationViewState}
             explanationErrorMessage={explanationErrorMessage}
+            isGuestUser={isGuestUser}
             onChangeTab={setSelectedTab}
             onScrap={openScrapConfirm}
             scrapErrorMessage={scrapState.error}

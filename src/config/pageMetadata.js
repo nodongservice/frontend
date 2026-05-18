@@ -93,6 +93,18 @@ const NOT_FOUND_METADATA = Object.freeze({
   robots: 'noindex,nofollow'
 });
 
+function getJobDetailMetadata(pathname) {
+  if (!/^\/jobs\/[^/]+$/.test(pathname)) {
+    return null;
+  }
+
+  return {
+    title: '채용 공고 상세 | BridgeWork',
+    description: 'BridgeWork 채용 공고의 직무명, 기업명, 근무지역, 근무 조건, 기본 접근성 정보를 확인하세요.',
+    robots: 'index,follow'
+  };
+}
+
 function getOrganizationStructuredData() {
   return {
     '@context': 'https://schema.org',
@@ -171,7 +183,11 @@ function getPolicyMetadata(pathname) {
 
 export function getPageMetadata(pathname) {
   const normalizedPathname = normalizePathname(pathname);
-  const routeMetadata = PAGE_METADATA[normalizedPathname] || getPolicyMetadata(normalizedPathname) || NOT_FOUND_METADATA;
+  const routeMetadata =
+    PAGE_METADATA[normalizedPathname] ||
+    getJobDetailMetadata(normalizedPathname) ||
+    getPolicyMetadata(normalizedPathname) ||
+    NOT_FOUND_METADATA;
 
   return {
     ...DEFAULT_PAGE_METADATA,

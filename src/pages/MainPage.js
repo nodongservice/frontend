@@ -869,6 +869,7 @@ function PopularPostingDetailModal({
   detail,
   loading,
   error,
+  isGuestUser = false,
   quickFitScore = null,
   quickExplainState = { status: 'idle', error: '', data: null },
   onClose,
@@ -877,6 +878,7 @@ function PopularPostingDetailModal({
   const scrapButtonLabel = !detail?.postingId ? '스크랩 불가' : detail?.scrappedByMe ? '스크랩 완료' : '공고 스크랩';
   const isScrapDisabled = !detail?.postingId || detail?.scrappedByMe || detail?.postingStatus !== 'ACTIVE';
   const hasQuickFitScore = typeof quickFitScore === 'number';
+  const shouldShowAiGuide = isGuestUser && quickExplainState.status === 'idle';
   const deadlineText = detail ? parseDateText(detail.termDate) || '없음' : '';
   const registeredText = detail ? detail.offerRegisteredAt || detail.registeredAt || '없음' : '';
   const summaryItems = detail ? [
@@ -958,7 +960,7 @@ function PopularPostingDetailModal({
                   </div>
                 ))}
               </section>
-              {(hasQuickFitScore || quickExplainState.status !== 'idle') ? (
+              {(hasQuickFitScore || quickExplainState.status !== 'idle' || shouldShowAiGuide) ? (
                 <section className="jobs-detail__section" aria-label="직무 적합도 및 추천 설명">
                   <div className="jobs-detail__section-title">
                     <h3>AI 직무 적합도 및 추천 설명</h3>
@@ -980,6 +982,13 @@ function PopularPostingDetailModal({
                   ) : null}
                   {quickExplainState.status === 'loading' ? (
                     <LlmExplanationProgress description="공고 조건과 선택한 프로필 기준으로 추천 이유를 생성하고 있습니다." />
+                  ) : null}
+                  {shouldShowAiGuide ? (
+                    <div className="jobs-detail__notice jobs-detail__notice--quick" role="note">
+                      <span className="jobs-detail__eyebrow">회원 전용 AI 설명</span>
+                      <strong>로그인하면 개인 조건을 반영한 AI 추천 설명을 확인할 수 있어요.</strong>
+                      <p>공고 기본 정보와 작업 환경 정보는 지금 바로 확인할 수 있습니다.</p>
+                    </div>
                   ) : null}
                   {quickExplainState.status === 'error' ? <div className="jobs-feedback is-error" role="alert">{quickExplainState.error}</div> : null}
                   {quickExplainState.status === 'success' && quickExplainState.data ? (
@@ -1522,24 +1531,28 @@ export function MainPage() {
   }, [callWithAuth, isAuthenticated, isInitializing]);
 
   const runQuickRecommendation = useCallback(async ({ profileId, aiEnabled, filters, signal, existingRequestId = '' }) => {
-    if (!profileId) {
+    const isPublicRequest = !isAuthenticated;
+    const effectiveAiEnabled = isPublicRequest ? false : aiEnabled;
+    const effectiveProfileId = isPublicRequest ? '' : profileId;
+
+    if (!isPublicRequest && !effectiveProfileId) {
       setQuickState({ status: 'empty', error: '', rawJobs: [] });
       return;
     }
 
-    const selectedProfileObject = profilesState.profiles.find((profile) => getProfileId(profile) === String(profileId)) || null;
+    const selectedProfileObject = profilesState.profiles.find((profile) => getProfileId(profile) === String(effectiveProfileId)) || null;
     const profileSignature = getProfileScoringSignature(selectedProfileObject);
     const cacheKey = getRecommendationCacheKey({
-      profileId,
-      aiEnabled,
+      profileId: effectiveProfileId || 'public',
+      aiEnabled: effectiveAiEnabled,
       scope: 'quick-home',
-      profileSignature
+      profileSignature: isPublicRequest ? '' : profileSignature
     });
 
     const cached = getCachedRecommendation(cacheKey);
     if (cached) {
       const cachedJobs = parseQuickJobsFromResult(cached);
-      setAppliedAiEnabled(aiEnabled);
+      setAppliedAiEnabled(effectiveAiEnabled);
       setAppliedFilters(filters);
       setQuickState({ status: cachedJobs.length ? 'success' : 'empty', error: '', rawJobs: cachedJobs });
       return;
@@ -1556,7 +1569,7 @@ export function MainPage() {
         clearPendingQuickTask();
         setCachedRecommendation(cacheKey, taskResult);
         const directJobs = parseQuickJobsFromResult(taskResult);
-        setAppliedAiEnabled(aiEnabled);
+        setAppliedAiEnabled(effectiveAiEnabled);
         setAppliedFilters(filters);
         setQuickState({ status: directJobs.length ? 'success' : 'empty', error: '', rawJobs: directJobs });
         return;
@@ -1575,7 +1588,7 @@ export function MainPage() {
         clearPendingQuickTask();
         setCachedRecommendation(cacheKey, taskResult.result);
         const jobs = parseQuickJobsFromResult(taskResult.result);
-        setAppliedAiEnabled(aiEnabled);
+        setAppliedAiEnabled(effectiveAiEnabled);
         setAppliedFilters(filters);
         setQuickState({ status: jobs.length ? 'success' : 'empty', error: '', rawJobs: jobs });
         return;
@@ -1586,7 +1599,7 @@ export function MainPage() {
         return;
       }
 
-      writePendingQuickTask(taskRequestId, profileId, aiEnabled, filters);
+      writePendingQuickTask(taskRequestId, effectiveProfileId, effectiveAiEnabled, filters);
       const completed = await waitForRecommendTask(callWithAuth, taskRequestId, signal);
       const completedStatus = getTaskStatus(completed);
 
@@ -1599,7 +1612,7 @@ export function MainPage() {
       clearPendingQuickTask();
       setCachedRecommendation(cacheKey, completed.result);
       const jobs = parseQuickJobsFromResult(completed.result);
-      setAppliedAiEnabled(aiEnabled);
+      setAppliedAiEnabled(effectiveAiEnabled);
       setAppliedFilters(filters);
       setQuickState({ status: jobs.length ? 'success' : 'empty', error: '', rawJobs: jobs });
     };
@@ -1616,19 +1629,24 @@ export function MainPage() {
       }
     }
 
-    const taskPayload = await callWithAuth((accessToken) =>
-      fetchQuickJobRecommendations(accessToken, {
-        aiEnabled,
-        profileId,
-        signal
-      })
-    );
+    const taskPayload = isPublicRequest
+      ? await fetchQuickJobRecommendations(undefined, {
+          aiEnabled: false,
+          signal
+        })
+      : await callWithAuth((accessToken) =>
+          fetchQuickJobRecommendations(accessToken, {
+            aiEnabled: effectiveAiEnabled,
+            profileId: effectiveProfileId,
+            signal
+          })
+        );
     const taskResult = normalizeTaskPayload(taskPayload);
     await proceedTaskResult(taskResult);
-  }, [callWithAuth, profilesState.profiles]);
+  }, [callWithAuth, isAuthenticated, profilesState.profiles]);
 
   useEffect(() => {
-    if (!isAuthenticated || !selectedProfileId || autoRequestedRef.current) {
+    if (isInitializing || autoRequestedRef.current || (isAuthenticated && !selectedProfileId)) {
       return undefined;
     }
 
@@ -1649,8 +1667,8 @@ export function MainPage() {
     }
 
     runQuickRecommendation({
-      profileId: selectedProfileId,
-      aiEnabled: isAiEnabled,
+      profileId: isAuthenticated ? selectedProfileId : '',
+      aiEnabled: isAuthenticated ? isAiEnabled : false,
       filters: draftFilters,
       signal: controller.signal,
       existingRequestId: pendingRequestId
@@ -1668,7 +1686,7 @@ export function MainPage() {
     return () => {
       controller.abort();
     };
-  }, [isAuthenticated, runQuickRecommendation, selectedProfileId, isAiEnabled, draftFilters]);
+  }, [isAuthenticated, isInitializing, runQuickRecommendation, selectedProfileId, isAiEnabled, draftFilters]);
 
   const loadQuickExplanation = useCallback(async (job, profileObject, detailObject = null, options = {}) => {
     const { requireFitScore = true } = options;
@@ -1756,11 +1774,6 @@ export function MainPage() {
   }, [appliedAiEnabled, callWithAuth, selectedProfileId]);
 
   const handleOpenPopularPosting = useCallback(async (postingId) => {
-    if (!isAuthenticated) {
-      setIsLoginModalOpen(true);
-      return;
-    }
-
     setQuickDetailState({
       mode: 'popular',
       fitScore: null,
@@ -1773,7 +1786,9 @@ export function MainPage() {
     setDetailState({ status: 'loading', error: '', data: null });
 
     try {
-      const detail = await callWithAuth((accessToken) => postingApi.getPostingDetail(postingId, { accessToken }));
+      const detail = isAuthenticated
+        ? await callWithAuth((accessToken) => postingApi.getPostingDetail(postingId, { accessToken }))
+        : await postingApi.getPostingDetail(postingId);
       const normalizedDetail = normalizePostingDetail(detail);
       setDetailState({ status: 'success', error: '', data: normalizedDetail });
     } catch (error) {
@@ -1786,7 +1801,9 @@ export function MainPage() {
       return;
     }
 
-    const selectedProfileObject = profilesState.profiles.find((profile) => getProfileId(profile) === String(selectedProfileId)) || null;
+    const selectedProfileObject = isAuthenticated
+      ? profilesState.profiles.find((profile) => getProfileId(profile) === String(selectedProfileId)) || null
+      : null;
     setQuickDetailState({
       mode: 'quick',
       fitScore: typeof job.fitScore === 'number' ? job.fitScore : null,
@@ -1806,7 +1823,9 @@ export function MainPage() {
     }
 
     try {
-      const detail = await callWithAuth((accessToken) => postingApi.getPostingDetail(postingId, { accessToken }));
+      const detail = isAuthenticated
+        ? await callWithAuth((accessToken) => postingApi.getPostingDetail(postingId, { accessToken }))
+        : await postingApi.getPostingDetail(postingId);
       const normalizedDetail = normalizePostingDetail(detail);
       setDetailState({ status: 'success', error: '', data: normalizedDetail });
       loadQuickExplanation(job, selectedProfileObject, normalizedDetail);
@@ -1819,10 +1838,10 @@ export function MainPage() {
       });
       loadQuickExplanation(job, selectedProfileObject, fallbackDetail);
     }
-  }, [callWithAuth, loadQuickExplanation, profilesState.profiles, selectedProfileId]);
+  }, [callWithAuth, isAuthenticated, loadQuickExplanation, profilesState.profiles, selectedProfileId]);
 
   const handleApplyQuickFilters = useCallback(async () => {
-    if (!selectedProfileId || quickState.status === 'loading' || quickState.status === 'refetching') {
+    if ((isAuthenticated && !selectedProfileId) || quickState.status === 'loading' || quickState.status === 'refetching') {
       return;
     }
 
@@ -1830,8 +1849,8 @@ export function MainPage() {
 
     try {
       await runQuickRecommendation({
-        profileId: selectedProfileId,
-        aiEnabled: isAiEnabled,
+        profileId: isAuthenticated ? selectedProfileId : '',
+        aiEnabled: isAuthenticated ? isAiEnabled : false,
         filters: draftFilters,
         signal: controller.signal
       });
@@ -1842,7 +1861,7 @@ export function MainPage() {
       }
       setQuickState({ status: 'error', error: error.message || '퀵 추천을 불러오지 못했습니다.', rawJobs: [] });
     }
-  }, [draftFilters, isAiEnabled, quickState.status, runQuickRecommendation, selectedProfileId]);
+  }, [draftFilters, isAiEnabled, isAuthenticated, quickState.status, runQuickRecommendation, selectedProfileId]);
 
   const handleResetQuickFilters = useCallback(() => {
     setDraftFilters({
@@ -1985,7 +2004,7 @@ export function MainPage() {
                   <h1 id="quick-recommend-title">퀵 맞춤 일자리 추천</h1>
                   <AccessibilityScoreHelpButton />
                 </div>
-                <p>{isAiEnabled ? 'AI 직무 적합도 기반 추천 결과' : '최신 공고 기반 추천 결과'}</p>
+                <p>{isGuestUser || !isAiEnabled ? '최신 공고 기반 추천 결과' : 'AI 직무 적합도 기반 추천 결과'}</p>
               </div>
             </section>
 
@@ -2067,13 +2086,7 @@ export function MainPage() {
                   <button
                     type="button"
                     className="accessibility-map__collapse-button"
-                    onClick={() => {
-                      if (isGuestUser) {
-                        openLoginModal();
-                        return;
-                      }
-                      setIsQuickFilterCollapsed((prev) => !prev);
-                    }}
+                    onClick={() => setIsQuickFilterCollapsed((prev) => !prev)}
                     aria-expanded={!isQuickFilterCollapsed}
                   >
                     {isQuickFilterCollapsed ? '필터 펼치기' : '필터 접기'}
@@ -2117,26 +2130,14 @@ export function MainPage() {
                                 <JobCategoryCascadeFilter
                                   categories={group.jobCategories}
                                   value={group.selectedValue}
-                                  onChange={(value) => {
-                                    if (isGuestUser) {
-                                      openLoginModal();
-                                      return;
-                                    }
-                                    setDraftFilters((prev) => ({ ...prev, [group.id]: value }));
-                                  }}
+                                  onChange={(value) => setDraftFilters((prev) => ({ ...prev, [group.id]: value }))}
                                 />
                               ) : group.type === 'select' ? (
                                 <SelectFilter
                                   label={group.title}
                                   options={group.options}
                                   value={group.selectedValue}
-                                  onChange={(value) => {
-                                    if (isGuestUser) {
-                                      openLoginModal();
-                                      return;
-                                    }
-                                    setDraftFilters((prev) => ({ ...prev, [group.id]: value }));
-                                  }}
+                                  onChange={(value) => setDraftFilters((prev) => ({ ...prev, [group.id]: value }))}
                                 />
                               ) : (
                                 <div className="accessibility-map__chip-row accessibility-map__chip-row--expanded">
@@ -2146,13 +2147,7 @@ export function MainPage() {
                                       type="button"
                                       className={`accessibility-map__chip${group.selectedValue === chip ? ' is-selected' : ''}`}
                                       aria-pressed={group.selectedValue === chip}
-                                      onClick={() => {
-                                        if (isGuestUser) {
-                                          openLoginModal();
-                                          return;
-                                        }
-                                        setDraftFilters((prev) => ({ ...prev, [group.id]: chip }));
-                                      }}
+                                      onClick={() => setDraftFilters((prev) => ({ ...prev, [group.id]: chip }))}
                                     >
                                       {chip}
                                     </button>
@@ -2174,14 +2169,14 @@ export function MainPage() {
                 <button
                   type="button"
                   className="secondary-button accessibility-map__filter-reset-button"
-                  onClick={isGuestUser ? openLoginModal : handleResetQuickFilters}
+                  onClick={handleResetQuickFilters}
                 >
                   초기화
                 </button>
                 <button
                   type="button"
                   className="primary-button accessibility-map__filter-apply-button"
-                  onClick={isGuestUser ? openLoginModal : handleApplyQuickFilters}
+                  onClick={handleApplyQuickFilters}
                   disabled={!isGuestUser && (isQuickLoading || !selectedProfileId)}
                 >
                   {isQuickLoading ? '로딩중' : '검색'}
@@ -2190,7 +2185,7 @@ export function MainPage() {
             </div>
 
             <section className="home-quick__results" aria-label="퀵 추천 결과">
-              {!isGuestUser && quickState.status === 'success' ? (
+              {quickState.status === 'success' ? (
                 <div className="accessibility-map__results-header home-quick__results-header">
                   <h3>
                     <span>검색 결과 {filteredQuickJobs.length}개</span>
@@ -2199,20 +2194,22 @@ export function MainPage() {
                   <span>{appliedAiEnabled ? '직무 적합도 높은순' : '최신순'}</span>
                 </div>
               ) : null}
-              {isGuestUser ? <div className="home-feedback" role="status">로그인 후 퀵 맞춤 일자리 추천 결과를 확인할 수 있습니다.</div> : null}
+              {isGuestUser && quickState.status === 'success' ? (
+                <div className="home-feedback" role="status">로그인하면 개인 조건을 반영한 AI 추천 설명을 확인할 수 있어요.</div>
+              ) : null}
               {!isGuestUser && profilesState.status === 'loading' ? <div className="home-feedback" role="status">프로필을 불러오는 중입니다.</div> : null}
               {!isGuestUser && profilesState.status === 'error' ? <div className="home-feedback is-error" role="alert">{profilesState.error}</div> : null}
-              {!isGuestUser && quickState.status === 'idle' ? <div className="home-feedback" role="status">검색을 누르면 퀵 추천 결과를 조회합니다.</div> : null}
-              {!isGuestUser && (quickState.status === 'loading' || quickState.status === 'refetching') ? (
+              {quickState.status === 'idle' ? <div className="home-feedback" role="status">검색을 누르면 퀵 추천 결과를 조회합니다.</div> : null}
+              {(quickState.status === 'loading' || quickState.status === 'refetching') ? (
                 <div className="home-feedback jobs-feedback--animated-dots" role="status" aria-live="polite">
                   로딩중
                   <span className="jobs-feedback__dots" aria-hidden="true" />
                 </div>
               ) : null}
-              {!isGuestUser && quickState.status === 'error' ? <div className="home-feedback is-error" role="alert">{quickState.error}</div> : null}
-              {!isGuestUser && quickState.status === 'empty' ? <div className="home-feedback" role="status">현재 조건에 맞는 공고가 없습니다.</div> : null}
+              {quickState.status === 'error' ? <div className="home-feedback is-error" role="alert">{quickState.error}</div> : null}
+              {quickState.status === 'empty' ? <div className="home-feedback" role="status">현재 조건에 맞는 공고가 없습니다.</div> : null}
 
-              {!isGuestUser && quickState.status === 'success' ? (
+              {quickState.status === 'success' ? (
                 <div className="home-job-list" aria-label="퀵 추천 공고 목록">
                   {filteredQuickJobs.map((job) => (
                     <button
@@ -2290,6 +2287,7 @@ export function MainPage() {
           detail={detailState.data}
           loading={detailState.status === 'loading'}
           error={detailState.status === 'error' ? detailState.error : ''}
+          isGuestUser={isGuestUser}
           quickFitScore={quickDetailState.fitScore}
           quickExplainState={{
             status: quickDetailState.explainStatus,
@@ -2309,7 +2307,7 @@ export function MainPage() {
               explainData: null
             });
           }}
-          onScrap={() => setScrapConfirmOpen(true)}
+          onScrap={isGuestUser ? openLoginModal : () => setScrapConfirmOpen(true)}
         />
       ) : null}
 

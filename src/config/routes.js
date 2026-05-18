@@ -5,6 +5,7 @@ export const ROUTE_PATHS = Object.freeze({
   login: '/login',
   accessibilityMap: '/accessibility-map',
   jobs: '/jobs',
+  jobDetail: '/jobs/:postingId',
   profile: '/profile',
   signup: '/signup',
   myProfile: '/my/profile',

@@ -4,9 +4,9 @@ const path = require('path');
 const supportedLocales = ['ko', 'en', 'ja', 'zh'];
 const defaultLocale = 'ko';
 const publicRoutes = ['/', '/about', '/faq', '/terms', '/privacy'];
-// TODO: 공개 채용 목록과 /jobs/:id 상세 라우트가 생기면 Spring Backend의 공고 API를
-// 빌드 시점 또는 서버 엔드포인트에서 조회해 sitemap에 /jobs/{id}를 추가한다.
-// 현재 /jobs는 로그인 후 스크랩 관리 화면이라 robots와 sitemap 색인 대상에서 제외한다.
+// TODO: Spring Backend의 공개 공고 API를 빌드 시점 또는 서버 엔드포인트에서 조회해
+// sitemap에 실제 /jobs/{id} 항목을 추가한다. /jobs 루트는 스크랩 관리 화면이라
+// 제외하지만, /jobs/{id} 공개 상세는 robots에서 허용한다.
 const policyRoutes = [
   '/settings/policies/terms',
   '/settings/policies/privacy-policy',
@@ -72,6 +72,8 @@ ${['/login', '/signup', '/profile', '/my/', '/jobs', '/accessibility-map', '/set
   .join('\n')}
 
 # Public policy documents live below /settings/policies and are safe to crawl.
+Allow: /jobs/
+${supportedLocales.map((locale) => `Allow: /${locale}/jobs/`).join('\n')}
 Allow: /settings/policies/
 ${supportedLocales.map((locale) => `Allow: /${locale}/settings/policies/`).join('\n')}
 

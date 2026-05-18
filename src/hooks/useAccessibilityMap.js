@@ -1487,17 +1487,8 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
       return undefined;
     }
 
-    if (!isAuthenticated) {
-      setRecommendationState({
-        status: 'disabled',
-        error: '지역 접근성 지도 추천을 보려면 로그인이 필요합니다.',
-        payload: null,
-        jobs: []
-      });
-      return undefined;
-    }
-
     if (
+      isAuthenticated &&
       appliedAiEnabled &&
       (
         profilesState.status === 'loading' ||
@@ -1515,7 +1506,7 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
       return undefined;
     }
 
-    if (appliedAiEnabled && profilesState.status === 'error') {
+    if (isAuthenticated && appliedAiEnabled && profilesState.status === 'error') {
       setRecommendationState({
         status: 'error',
         error: profilesState.error || '프로필 목록을 불러오지 못했습니다.',
@@ -1525,7 +1516,7 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
       return undefined;
     }
 
-    if (appliedAiEnabled && (!profilesState.profiles.length || !selectedProfileId)) {
+    if (isAuthenticated && appliedAiEnabled && (!profilesState.profiles.length || !selectedProfileId)) {
       setRecommendationState({
         status: 'noProfile',
         error: '',
@@ -1537,11 +1528,13 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
 
     let isCurrentRequest = true;
     const controller = new AbortController();
+    const effectiveAiEnabled = isAuthenticated ? appliedAiEnabled : false;
+    const effectiveProfileId = isAuthenticated && effectiveAiEnabled ? selectedProfileId : '';
     const cacheKey = getRecommendationCacheKey({
-      profileId: selectedProfileId,
-      aiEnabled: appliedAiEnabled,
+      profileId: effectiveProfileId || 'public',
+      aiEnabled: effectiveAiEnabled,
       scope: 'map',
-      profileSignature: appliedAiEnabled ? selectedProfileScoringSignature : ''
+      profileSignature: effectiveAiEnabled ? selectedProfileScoringSignature : ''
     });
     const isScoringInputChanged = Boolean(activeRecommendationCacheKeyRef.current && activeRecommendationCacheKeyRef.current !== cacheKey);
 
@@ -1550,7 +1543,7 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
       if (cachedPayload) {
         if (isCurrentRequest) {
           activeRecommendationCacheKeyRef.current = cacheKey;
-          setRecommendationState(buildRecommendationStateFromPayload(cachedPayload, appliedAiEnabled, selectedProfile));
+          setRecommendationState(buildRecommendationStateFromPayload(cachedPayload, effectiveAiEnabled, selectedProfile));
         }
         return;
       }
@@ -1563,15 +1556,21 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
       }));
 
       try {
-        const taskPayload = await callWithAuth((accessToken) =>
-          fetchMapJobRecommendations(accessToken, {
-            aiEnabled: appliedAiEnabled,
-            profileId: appliedAiEnabled ? selectedProfileId : undefined,
-            profileSignature: appliedAiEnabled ? selectedProfileScoringSignature : undefined,
-            signal: controller.signal,
-            timeoutMs: MAP_RECOMMEND_REQUEST_TIMEOUT_MS
-          })
-        );
+        const taskPayload = isAuthenticated
+          ? await callWithAuth((accessToken) =>
+              fetchMapJobRecommendations(accessToken, {
+                aiEnabled: effectiveAiEnabled,
+                profileId: effectiveAiEnabled ? effectiveProfileId : undefined,
+                profileSignature: effectiveAiEnabled ? selectedProfileScoringSignature : undefined,
+                signal: controller.signal,
+                timeoutMs: MAP_RECOMMEND_REQUEST_TIMEOUT_MS
+              })
+            )
+          : await fetchMapJobRecommendations(undefined, {
+              aiEnabled: false,
+              signal: controller.signal,
+              timeoutMs: MAP_RECOMMEND_REQUEST_TIMEOUT_MS
+            });
 
         const taskResult = taskPayload;
         if (taskResult?.status === 'FAILED') {
@@ -1618,7 +1617,7 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
           return;
         }
 
-        const nextState = buildRecommendationStateFromPayload(completedPayload, appliedAiEnabled, selectedProfile);
+        const nextState = buildRecommendationStateFromPayload(completedPayload, effectiveAiEnabled, selectedProfile);
 
         if (!isCurrentRequest) {
           return;
@@ -1711,15 +1710,6 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
       return undefined;
     }
 
-    if (!isAuthenticated) {
-      setSupportAgencyState({
-        status: 'disabled',
-        error: '',
-        agencies: []
-      });
-      return undefined;
-    }
-
     const controller = new AbortController();
 
     const loadSupportAgencies = async () => {
@@ -1730,7 +1720,9 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
       }));
 
       try {
-        const agencies = await callWithAuth((accessToken) => mapApi.getSupportAgencies(accessToken, controller.signal));
+        const agencies = isAuthenticated
+          ? await callWithAuth((accessToken) => mapApi.getSupportAgencies(accessToken, controller.signal))
+          : await mapApi.getSupportAgencies(undefined, controller.signal);
         setSupportAgencyState({
           status: agencies.length ? 'success' : 'empty',
           error: '',
@@ -1757,7 +1749,7 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
   }, [callWithAuth, hasAppliedConditions, isAuthenticated, reloadKey, showSupportAgencies]);
 
   useEffect(() => {
-    if (!appliedAiEnabled || !selectedJob || !selectedProfileId || recommendationState.status !== 'success') {
+    if (!isAuthenticated || !appliedAiEnabled || !selectedJob || !selectedProfileId || recommendationState.status !== 'success') {
       setExplanationState({
         status: 'idle',
         error: '',
@@ -1852,7 +1844,7 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
     return () => {
       controller.abort();
     };
-  }, [appliedAiEnabled, callWithAuth, recommendationState.status, selectedJob, selectedProfile, selectedProfileId, selectedProfileScoringSignature]);
+  }, [appliedAiEnabled, callWithAuth, isAuthenticated, recommendationState.status, selectedJob, selectedProfile, selectedProfileId, selectedProfileScoringSignature]);
 
   const reloadRecommendations = useCallback(() => {
     clearRecommendationCache();
@@ -1877,10 +1869,11 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
 
   const applyFilters = useCallback((filters) => {
     setSelectedFilters(filters || {});
-    setAppliedAiEnabled(isAiEnabled);
-    setSortMode(isAiEnabled ? 'score_desc' : 'latest_desc');
+    const nextAiEnabled = isAuthenticated ? isAiEnabled : false;
+    setAppliedAiEnabled(nextAiEnabled);
+    setSortMode(nextAiEnabled ? 'score_desc' : 'latest_desc');
     setHasAppliedConditions(true);
-  }, [isAiEnabled]);
+  }, [isAiEnabled, isAuthenticated]);
 
   const toggleAiScoring = useCallback(() => {
     setIsAiEnabled((current) => !current);
