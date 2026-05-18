@@ -1375,16 +1375,6 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
       return undefined;
     }
 
-    if (!isAuthenticated) {
-      setRecommendationState({
-        status: 'disabled',
-        error: '지역 접근성 지도 추천을 보려면 로그인이 필요합니다.',
-        payload: null,
-        jobs: []
-      });
-      return undefined;
-    }
-
     if (
       appliedAiEnabled &&
       (
@@ -1451,15 +1441,16 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
       }));
 
       try {
-        const taskPayload = await callWithAuth((accessToken) =>
-          fetchMapJobRecommendations(accessToken, {
-            aiEnabled: appliedAiEnabled,
-            profileId: appliedAiEnabled ? selectedProfileId : undefined,
-            profileSignature: appliedAiEnabled ? selectedProfileScoringSignature : undefined,
-            signal: controller.signal,
-            timeoutMs: MAP_RECOMMEND_REQUEST_TIMEOUT_MS
-          })
-        );
+        const requestPayload = {
+          aiEnabled: appliedAiEnabled && isAuthenticated,
+          profileId: appliedAiEnabled && isAuthenticated ? selectedProfileId : undefined,
+          profileSignature: appliedAiEnabled && isAuthenticated ? selectedProfileScoringSignature : undefined,
+          signal: controller.signal,
+          timeoutMs: MAP_RECOMMEND_REQUEST_TIMEOUT_MS
+        };
+        const taskPayload = isAuthenticated
+          ? await callWithAuth((accessToken) => fetchMapJobRecommendations(accessToken, requestPayload))
+          : await fetchMapJobRecommendations(null, requestPayload);
 
         const taskResult = taskPayload;
         if (taskResult?.status === 'FAILED') {
@@ -1599,15 +1590,6 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
       return undefined;
     }
 
-    if (!isAuthenticated) {
-      setSupportAgencyState({
-        status: 'disabled',
-        error: '',
-        agencies: []
-      });
-      return undefined;
-    }
-
     const controller = new AbortController();
 
     const loadSupportAgencies = async () => {
@@ -1618,7 +1600,9 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
       }));
 
       try {
-        const agencies = await callWithAuth((accessToken) => mapApi.getSupportAgencies(accessToken, controller.signal));
+        const agencies = isAuthenticated
+          ? await callWithAuth((accessToken) => mapApi.getSupportAgencies(accessToken, controller.signal))
+          : await mapApi.getSupportAgencies(null, controller.signal);
         setSupportAgencyState({
           status: agencies.length ? 'success' : 'empty',
           error: '',
@@ -1765,10 +1749,11 @@ export function useAccessibilityMap({ searchQuery = '' } = {}) {
 
   const applyFilters = useCallback((filters) => {
     setSelectedFilters(filters || {});
-    setAppliedAiEnabled(isAiEnabled);
-    setSortMode(isAiEnabled ? 'score_desc' : 'latest_desc');
+    const shouldUseAi = isAuthenticated && isAiEnabled;
+    setAppliedAiEnabled(shouldUseAi);
+    setSortMode(shouldUseAi ? 'score_desc' : 'latest_desc');
     setHasAppliedConditions(true);
-  }, [isAiEnabled]);
+  }, [isAiEnabled, isAuthenticated]);
 
   const toggleAiScoring = useCallback(() => {
     setIsAiEnabled((current) => !current);

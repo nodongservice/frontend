@@ -3,10 +3,27 @@ const path = require('path');
 
 const supportedLocales = ['ko', 'en', 'ja', 'zh'];
 const defaultLocale = 'ko';
-const publicRoutes = ['/', '/about', '/faq', '/terms', '/privacy'];
-// TODO: 공개 채용 목록과 /jobs/:id 상세 라우트가 생기면 Spring Backend의 공고 API를
-// 빌드 시점 또는 서버 엔드포인트에서 조회해 sitemap에 /jobs/{id}를 추가한다.
-// 현재 /jobs는 로그인 후 스크랩 관리 화면이라 robots와 sitemap 색인 대상에서 제외한다.
+const guideSlugs = [
+  'accessibility-checklist-for-disabled-job-seekers',
+  'wheelchair-accessible-commute-jobs',
+  'why-accessibility-job-recommendation-matters',
+  'map-based-job-search-for-mobility-impaired',
+  'disabled-hiring-work-environment-checklist'
+];
+const configuredJobIds = String(process.env.REACT_APP_SITEMAP_JOB_IDS || process.env.SITEMAP_JOB_IDS || '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+const publicRoutes = [
+  '/',
+  '/about',
+  '/faq',
+  '/guides',
+  ...guideSlugs.map((slug) => `/guides/${slug}`),
+  ...configuredJobIds.map((id) => `/jobs/${encodeURIComponent(id)}`),
+  '/terms',
+  '/privacy'
+];
 const policyRoutes = [
   '/settings/policies/terms',
   '/settings/policies/privacy-policy',
@@ -62,12 +79,11 @@ Disallow: /login
 Disallow: /signup
 Disallow: /profile
 Disallow: /my/
-Disallow: /jobs
 Disallow: /accessibility-map
 Disallow: /settings
 Disallow: /auth/
 Disallow: /api
-${['/login', '/signup', '/profile', '/my/', '/jobs', '/accessibility-map', '/settings', '/auth/', '/api']
+${['/login', '/signup', '/profile', '/my/', '/accessibility-map', '/settings', '/auth/', '/api']
   .map(disallowLocalized)
   .join('\n')}
 

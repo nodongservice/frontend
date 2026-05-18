@@ -140,10 +140,6 @@ export function TrafficFilterPanel({
   const orderedFilterItems = useMemo(() => filterItems, [filterItems]);
 
   const handleSelectDraftFilter = (filterId, value) => {
-    if (isGuestUser) {
-      onRequireLogin?.();
-      return;
-    }
     setDraftFilterValues((current) => ({
       ...current,
       [filterId]: value
@@ -151,11 +147,6 @@ export function TrafficFilterPanel({
   };
 
   const handleApplyFilters = () => {
-    if (isGuestUser) {
-      onRequireLogin?.();
-      return;
-    }
-
     if (isRecommendationBusy) {
       return;
     }
@@ -165,11 +156,6 @@ export function TrafficFilterPanel({
   };
 
   const handleResetFilters = () => {
-    if (isGuestUser) {
-      onRequireLogin?.();
-      return;
-    }
-
     if (isRecommendationBusy) {
       return;
     }
@@ -195,13 +181,7 @@ export function TrafficFilterPanel({
         <button
           type="button"
           className="accessibility-map__collapse-button"
-          onClick={() => {
-            if (isGuestUser) {
-              onRequireLogin?.();
-              return;
-            }
-            setIsFilterCollapsed((prev) => !prev);
-          }}
+          onClick={() => setIsFilterCollapsed((prev) => !prev)}
           aria-expanded={!isFilterCollapsed}
         >
           {isFilterCollapsed ? '필터 펼치기' : '필터 접기'}

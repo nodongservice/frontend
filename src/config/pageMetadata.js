@@ -1,6 +1,7 @@
 import { POLICY_DOCUMENT_MAP } from './policyDocuments';
 import { ROUTE_PATHS } from './routes';
 import { SERVICE_FAQ_ITEMS } from './seoContent';
+import { getGuideBySlug } from './guideContent';
 import {
   DEFAULT_LOCALE,
   SUPPORTED_LOCALE_CODES,
@@ -17,10 +18,10 @@ export const DEFAULT_OG_IMAGE_PATH = '/og-image.png';
 export const SITE_NAME = 'BridgeWork';
 
 const DEFAULT_DESCRIPTION =
-  'BridgeWork는 장애인 구직자의 직무 적합도와 접근성 정보를 함께 확인할 수 있는 일자리 추천 서비스입니다.';
+  'BridgeWork는 장애인 구직자가 이동 접근성, 근무환경, 장애 지원 정보를 바탕으로 적합한 일자리를 지도에서 찾을 수 있도록 돕는 서비스입니다.';
 
 export const DEFAULT_PAGE_METADATA = Object.freeze({
-  title: 'BridgeWork | 장애인 맞춤 일자리 추천 플랫폼',
+  title: 'BridgeWork | 장애인 구직자를 위한 접근성 기반 일자리 추천',
   description: DEFAULT_DESCRIPTION,
   path: ROUTE_PATHS.root,
   imagePath: DEFAULT_OG_IMAGE_PATH,
@@ -30,9 +31,9 @@ export const DEFAULT_PAGE_METADATA = Object.freeze({
 
 const PAGE_METADATA = Object.freeze({
   [ROUTE_PATHS.root]: {
-    title: 'BridgeWork | 장애인 맞춤 일자리 추천 플랫폼',
+    title: 'BridgeWork | 장애인 구직자를 위한 접근성 기반 일자리 추천',
     description:
-      'BridgeWork는 장애 유형, 근무 조건, 출퇴근 접근성을 고려해 장애인 구직자에게 적합한 일자리를 추천하는 서비스입니다.',
+      'BridgeWork는 장애인 구직자가 이동 접근성, 근무환경, 장애 지원 정보를 바탕으로 적합한 일자리를 지도에서 찾을 수 있도록 돕는 서비스입니다.',
     structuredData: getWebSiteStructuredData
   },
   [ROUTE_PATHS.about]: {
@@ -46,6 +47,17 @@ const PAGE_METADATA = Object.freeze({
     description:
       'BridgeWork의 맞춤 일자리 추천, 접근성 점수, 개인정보 입력, 채용 공고 색인 정책에 대한 답변을 확인하세요.',
     structuredData: getFaqStructuredData
+  },
+  [ROUTE_PATHS.guides]: {
+    title: '장애인 일자리 접근성 가이드 | BridgeWork',
+    description:
+      '장애인 구직, 휠체어 접근성 일자리, 교통약자 일자리, 지도 기반 일자리 추천을 위한 BridgeWork 정보성 가이드를 확인하세요.',
+    structuredData: getGuideCollectionStructuredData
+  },
+  [ROUTE_PATHS.jobDetail]: {
+    title: '장애인 채용 공고 상세 | BridgeWork',
+    description:
+      '직무명, 회사명, 지역, 장애인 채용 여부, 휠체어 접근성, 대중교통, 엘리베이터/리프트, 근무환경 접근성 요약을 확인하세요.'
   },
   [ROUTE_PATHS.accessibilityMap]: {
     title: '지역 접근성 지도 | BridgeWork',
@@ -133,9 +145,15 @@ function getFaqStructuredData() {
   };
 }
 
-// TODO: 공개 /jobs/:id 라우트가 추가되면 실제 Spring Backend 공고 데이터의 title,
-// hiringOrganization, jobLocation, employmentType, datePosted, validThrough 매핑을 확인한 뒤
-// JobPosting JSON-LD를 추가한다. 현재 스크랩 관리용 /jobs에는 임의 공고 데이터를 만들지 않는다.
+function getGuideCollectionStructuredData() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: '장애인 일자리 접근성 가이드',
+    description: '접근성 기반 장애인 일자리 추천과 지도 기반 일자리 검색을 돕는 정보성 가이드입니다.',
+    url: buildAbsoluteUrl(ROUTE_PATHS.guides)
+  };
+}
 
 function normalizePathname(pathname) {
   const normalized = String(pathname || ROUTE_PATHS.root).split('?')[0].split('#')[0] || ROUTE_PATHS.root;
@@ -169,9 +187,55 @@ function getPolicyMetadata(pathname) {
   };
 }
 
+function getGuideMetadata(pathname) {
+  const prefix = '/guides/';
+
+  if (!pathname.startsWith(prefix)) {
+    return null;
+  }
+
+  const guide = getGuideBySlug(pathname.slice(prefix.length));
+
+  if (!guide) {
+    return null;
+  }
+
+  return {
+    title: `${guide.title} | BridgeWork`,
+    description: guide.description,
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: guide.title,
+      description: guide.description,
+      author: {
+        '@type': 'Organization',
+        name: SITE_NAME
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: SITE_NAME,
+        logo: {
+          '@type': 'ImageObject',
+          url: buildAbsoluteUrl('/logo.png')
+        }
+      },
+      mainEntityOfPage: buildAbsoluteUrl(`${ROUTE_PATHS.guides}/${guide.slug}`)
+    }
+  };
+}
+
+function getJobDetailMetadata(pathname) {
+  if (!/^\/jobs\/[^/]+$/.test(pathname)) {
+    return null;
+  }
+
+  return PAGE_METADATA[ROUTE_PATHS.jobDetail];
+}
+
 export function getPageMetadata(pathname) {
   const normalizedPathname = normalizePathname(pathname);
-  const routeMetadata = PAGE_METADATA[normalizedPathname] || getPolicyMetadata(normalizedPathname) || NOT_FOUND_METADATA;
+  const routeMetadata = PAGE_METADATA[normalizedPathname] || getPolicyMetadata(normalizedPathname) || getGuideMetadata(normalizedPathname) || getJobDetailMetadata(normalizedPathname) || NOT_FOUND_METADATA;
 
   return {
     ...DEFAULT_PAGE_METADATA,

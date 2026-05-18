@@ -6,7 +6,6 @@ Disallow: /login
 Disallow: /signup
 Disallow: /profile
 Disallow: /my/
-Disallow: /jobs
 Disallow: /accessibility-map
 Disallow: /settings
 Disallow: /auth/
@@ -27,10 +26,6 @@ Disallow: /ko/my/
 Disallow: /en/my/
 Disallow: /ja/my/
 Disallow: /zh/my/
-Disallow: /ko/jobs
-Disallow: /en/jobs
-Disallow: /ja/jobs
-Disallow: /zh/jobs
 Disallow: /ko/accessibility-map
 Disallow: /en/accessibility-map
 Disallow: /ja/accessibility-map

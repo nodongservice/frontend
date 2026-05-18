@@ -69,7 +69,13 @@ describe('sanitizeLogMeta', () => {
 
   it('redacts bearer tokens and auth query values embedded in strings', () => {
     expect(
-      sanitizeLogMeta('Authorization: Bearer token-value https://example.com/callback?code=oauth-code&state=ok')
-    ).toBe('Authorization: Bearer [REDACTED] https://example.com/callback?code=[REDACTED]&state=ok');
+      sanitizeLogMeta('Authorization: Bearer token-value https://user:pass@example.com/callback?code=oauth-code&serviceKey=open-api-key&state=ok')
+    ).toBe('Authorization: Bearer [REDACTED] https://user:[REDACTED]@example.com/callback?code=[REDACTED]&serviceKey=[REDACTED]&state=ok');
+  });
+
+  it('redacts jwt-looking values embedded in strings', () => {
+    expect(
+      sanitizeLogMeta('failed token eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.signature')
+    ).toBe('failed token [REDACTED]');
   });
 });

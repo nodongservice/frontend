@@ -15,6 +15,8 @@ import {
 import { WithdrawalConfirmDialog } from '../components/settings/WithdrawalConfirmDialog';
 import { StatusMessage } from '../components/common/StatusMessage';
 import { POLICY_DOCUMENTS, getPolicyPath } from '../config/policyDocuments';
+import { ROUTE_PATHS } from '../config/routes';
+import { SERVICE_FAQ_ITEMS } from '../config/seoContent';
 import { useProfiles } from '../hooks/useProfiles';
 import { useLocale } from '../i18n/LocaleContext';
 
@@ -23,6 +25,7 @@ const settingsMenu = [
   { id: 'accessibility', label: '접근성', group: '자주 사용' },
   { id: 'privacy', label: '내 데이터', group: '개인정보' },
   { id: 'support', label: '고객센터', group: '도움말' },
+  { id: 'faq', label: 'FAQ', group: '도움말' },
   { id: 'policies', label: '약관', group: '정보' },
   { id: 'danger', label: '회원탈퇴', group: '위험' }
 ];
@@ -41,6 +44,7 @@ const highlightedPolicyIds = ['privacy-policy', 'privacy-consent', 'withdrawal-r
 const highlightedPolicyItems = highlightedPolicyIds
   .map((policyId) => POLICY_DOCUMENTS.find((policy) => policy.id === policyId))
   .filter(Boolean);
+const settingsFaqItems = SERVICE_FAQ_ITEMS.slice(0, 3);
 
 const withdrawalRetentionItems = [
   {
@@ -517,10 +521,10 @@ export function SettingsPage() {
                   <strong>문의하기</strong>
                   <span>계정, 추천, 프로필 문의 접수</span>
                 </a>
-                <a className="settings-support-card" href="#policies">
+                <Link className="settings-support-card" to={localizePath(ROUTE_PATHS.faq)}>
                   <strong>FAQ</strong>
-                  <span>약관과 안내 항목에서 기본 정보를 확인합니다.</span>
-                </a>
+                  <span>추천, 접근성, 개인정보 관련 자주 묻는 질문</span>
+                </Link>
                 <a
                   className="settings-support-card"
                   href="mailto:emfpdlzj@gmail.com?subject=Bridgework%20%EC%98%A4%EB%A5%98%20%EC%A0%9C%EB%B3%B4"
@@ -549,6 +553,27 @@ export function SettingsPage() {
               </div>
             </SettingsSection>
           </section>
+
+          <SettingsSection
+            id="faq"
+            title="자주 묻는 질문"
+            description="서비스 이용 전 자주 확인하는 추천, 접근성, 개인정보 안내입니다."
+            tone="compact"
+            actions={
+              <Link className="settings-inline-text-button" to={localizePath(ROUTE_PATHS.faq)}>
+                전체 FAQ 보기
+              </Link>
+            }
+          >
+            <div className="settings-faq-list">
+              {settingsFaqItems.map((item) => (
+                <article key={item.question} className="settings-faq-card">
+                  <h3>{item.question}</h3>
+                  <p>{item.answer}</p>
+                </article>
+              ))}
+            </div>
+          </SettingsSection>
 
           <SettingsSection id="policies" title="약관 및 정책" description="자주 확인하는 정책을 먼저 보여주고 나머지는 접어서 제공합니다." tone="compact">
             <div className="settings-policy-highlight">

@@ -12,7 +12,7 @@ import { useLocale } from '../../i18n/LocaleContext';
 
 const footerPolicies = [
   { id: 'about', label: '서비스 소개', to: ROUTE_PATHS.about },
-  { id: 'faq', label: 'FAQ', to: ROUTE_PATHS.faq },
+  { id: 'faq', label: '자주 묻는 질문', to: ROUTE_PATHS.faq },
   { id: 'terms', labelKey: 'footer.terms', to: ROUTE_PATHS.terms },
   { id: 'privacy-policy', labelKey: 'footer.privacy', to: ROUTE_PATHS.privacy },
   { id: 'privacy-consent', labelKey: 'footer.privacyConsent', to: getPolicyPath('privacy-consent') },
