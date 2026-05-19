@@ -16,6 +16,7 @@
     "start": "vite",
     "prebuild": "node scripts/generate-seo-files.cjs",
     "build": "vite build",
+    "postbuild": "node scripts/generate-seo-files.cjs --build-html",
     "test": "jest --watchAll=false"
   },
   "browserslist": {
