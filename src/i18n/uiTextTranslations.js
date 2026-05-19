@@ -1797,10 +1797,10 @@ const UI_TEXT_TRANSLATIONS = {
     ja: '労働基準法上、就業可能な労働年齢は原則として満15歳以上です。'
   },
   '파일을 선택해 주세요.': { zh: '请选择文件。', en: 'Select a file.', ja: 'ファイルを選択してください。' },
-  '다만 근무지 주변 이동·대중교통 통근 정보는 근거 데이터가 부족해서, 지원 전 확인이 필요해요.': {
-    zh: '不过，工作地点周边移动和公共交通通勤信息的依据数据不足，申请前需要确认。',
-    en: 'However, nearby travel and public transit commute data is limited, so it needs confirmation before applying.',
-    ja: 'ただし、勤務地周辺の移動・公共交通通勤情報は根拠データが不足しているため、応募前に確認が必要です。'
+  '근무지 주변 이동·대중교통 통근 정보는 근거 데이터가 부족해서, 지원 전 확인이 필요해요.': {
+    zh: '工作地点周边移动和公共交通通勤信息的依据数据不足，申请前需要确认。',
+    en: 'Nearby travel and public transit commute data is limited, so it needs confirmation before applying.',
+    ja: '勤務地周辺の移動・公共交通通勤情報は根拠データが不足しているため、応募前に確認が必要です。'
   },
   '미응답': { zh: '未回应', en: 'No response', ja: '未回答' },
   'BridgeWork 서비스 소개 이미지': { zh: 'BridgeWork 服务介绍图片', en: 'BridgeWork service introduction image', ja: 'BridgeWorkサービス紹介画像' },
@@ -1828,10 +1828,10 @@ const UI_TEXT_TRANSLATIONS = {
     ja: 'カスタム推薦に必要な最小限の情報はオンボーディングで確認しますが、詳細な説明や補助機器などの敏感な情報は任意入力として扱います。'
   },
   '채용 공고 상세 페이지도 검색에 노출되나요?': { zh: '招聘详情页也会出现在搜索结果中吗？', en: 'Are job detail pages shown in search results?', ja: '求人詳細ページも検索に表示されますか？' },
-  '현재 React 앱에는 공개 공고 상세 URL이 없어서 검색 노출 대상에서 제외되어 있습니다. 추후 공개 공고 상세 라우트와 서버 기반 sitemap 생성이 준비되면 공고별 색인을 검토할 수 있습니다.': {
-    zh: '目前 React 应用没有公开的职位详情 URL，因此不纳入搜索曝光。今后若准备好公开职位详情路由和基于服务器的 sitemap 生成，可再评估按职位建立索引。',
-    en: 'Not currently. The React app does not have public job detail URLs, so they are excluded from search indexing. Job-level indexing can be reviewed after public detail routes and server-generated sitemaps are ready.',
-    ja: '現在、Reactアプリには公開求人詳細URLがないため、検索表示の対象から除外しています。今後、公開求人詳細ルートとサーバー生成のsitemapが整備されたら、求人ごとのインデックスを検討できます。'
+  '네. 공개 공고 상세 URL은 검색 노출 대상이며, 비회원도 공고 기본 정보와 작업 환경 정보를 확인할 수 있습니다. 개인 조건을 반영한 AI 설명과 스크랩 기능은 로그인 후 사용할 수 있습니다.': {
+    zh: '是。公开职位详情 URL 可被搜索收录，非会员也可以查看职位基本信息和工作环境信息。反映个人条件的 AI 说明和收藏功能需登录后使用。',
+    en: 'Yes. Public job detail URLs are eligible for search indexing, and guests can view the basic posting and work-environment information. AI explanations based on personal conditions and scrap features require login.',
+    ja: 'はい。公開求人詳細URLは検索表示の対象で、非会員も求人の基本情報と作業環境情報を確認できます。個人条件を反映したAI説明と保存機能はログイン後に利用できます。'
   },
   '추천 이유를 함께 보여주는 일자리 탐색': { zh: '查看推荐理由的职位探索', en: 'Explore jobs with recommendation reasons', ja: '推薦理由も確認できる仕事探し' },
   'BridgeWork는 공고 목록만 나열하지 않고 직무 조건, 근무 형태, 출퇴근 접근성 등 사용자가 판단에 참고할 수 있는 이유를 함께 제공합니다.': {

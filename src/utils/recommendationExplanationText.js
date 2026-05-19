@@ -1,5 +1,5 @@
 const UNSUPPORTED_COMMUTE_DATA_SENTENCE =
-  '다만 근무지 주변 이동·대중교통 통근 정보는 근거 데이터가 부족해서, 지원 전 확인이 필요해요.';
+  '근무지 주변 이동·대중교통 통근 정보는 근거 데이터가 부족해서, 지원 전 확인이 필요해요.';
 const CAUTION_CONFIRMATION_SENTENCE_PATTERN =
   /(?:^|\s)다만[^.!?。]*(?:확인(?:이)? 필요|추가 확인이 필요|확인해(?:야|주세요)|확인할 필요)[^.!?。]*(?:[.!?。]+|$)/g;
 
@@ -31,6 +31,7 @@ export function formatRecommendationExplanationText(text, fallbackScore) {
   return String(text)
     .replace(UNSUPPORTED_COMMUTE_DATA_SENTENCE, '')
     .replace(CAUTION_CONFIRMATION_SENTENCE_PATTERN, ' ')
+    .replace(/(?:^|\s)다만\s*(?=$|[.!?。])/g, ' ')
     .replace(/\bGOOD\b/g, fallbackGrade || 'A등급')
     .replace(/\bWARNING\b/g, 'B등급')
     .replace(/\bCAUTION\b/g, 'B등급')

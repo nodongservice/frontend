@@ -145,9 +145,7 @@ function getFaqStructuredData() {
   };
 }
 
-// TODO: 공개 /jobs/:id 라우트가 추가되면 실제 Spring Backend 공고 데이터의 title,
-// hiringOrganization, jobLocation, employmentType, datePosted, validThrough 매핑을 확인한 뒤
-// JobPosting JSON-LD를 추가한다. 현재 스크랩 관리용 /jobs에는 임의 공고 데이터를 만들지 않는다.
+// /jobs/:id 상세 화면은 Spring Backend 공고 응답을 받은 뒤 JobPosting JSON-LD를 동적으로 주입한다.
 
 function normalizePathname(pathname) {
   const normalized = String(pathname || ROUTE_PATHS.root).split('?')[0].split('#')[0] || ROUTE_PATHS.root;

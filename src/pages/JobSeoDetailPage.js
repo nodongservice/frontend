@@ -17,6 +17,11 @@ const parseDateText = (value) => {
   return raw.length === 8 ? `${raw.slice(0, 4)}.${raw.slice(4, 6)}.${raw.slice(6, 8)}` : '';
 };
 
+const parseDateForStructuredData = (value) => {
+  const raw = String(value ?? '').replace(/\D/g, '');
+  return raw.length === 8 ? `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}` : undefined;
+};
+
 const getDday = (value) => {
   const raw = String(value ?? '').replace(/\D/g, '');
   if (raw.length !== 8) {
@@ -73,6 +78,45 @@ function setMeta(selector, key, value) {
   }
 }
 
+function setStructuredData(detail) {
+  const scriptId = 'job-posting-structured-data';
+  const existing = document.getElementById(scriptId);
+  if (existing) {
+    existing.remove();
+  }
+
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'JobPosting',
+    title: detail.jobTitle,
+    description: `${detail.companyName} ${detail.jobTitle} 공고입니다. 근무지역 ${detail.workAddress}, 고용형태 ${detail.employmentType}, 임금 ${detail.salaryText}.`,
+    hiringOrganization: {
+      '@type': 'Organization',
+      name: detail.companyName
+    },
+    jobLocation: {
+      '@type': 'Place',
+      address: detail.workAddress
+    },
+    employmentType: detail.employmentType,
+    datePosted: parseDateForStructuredData(detail.registeredAt),
+    validThrough: parseDateForStructuredData(detail.termDate),
+    directApply: false
+  };
+
+  Object.keys(structuredData).forEach((key) => {
+    if (structuredData[key] === undefined || structuredData[key] === '') {
+      delete structuredData[key];
+    }
+  });
+
+  const script = document.createElement('script');
+  script.id = scriptId;
+  script.type = 'application/ld+json';
+  script.textContent = JSON.stringify(structuredData);
+  document.head.appendChild(script);
+}
+
 export function JobSeoDetailPage() {
   const { postingId } = useParams();
   const { isAuthenticated, callWithAuth } = useAuth();
@@ -118,6 +162,11 @@ export function JobSeoDetailPage() {
     setMeta('meta[name="robots"]', 'content', 'index,follow');
     setMeta('meta[property="og:title"]', 'content', title);
     setMeta('meta[property="og:description"]', 'content', description);
+    setStructuredData(state.detail);
+
+    return () => {
+      document.getElementById('job-posting-structured-data')?.remove();
+    };
   }, [state.detail]);
 
   const detail = state.detail;
