@@ -29,6 +29,10 @@
   --app-tab-nav-expanded-width: calc(224px * var(--ui-shell-scale));
 }
 
+html {
+  scroll-padding-top: calc(var(--app-header-height) + 24px);
+}
+
 @media (max-width: 900px) {
   :root {
     --ui-density-scale: 0.82;
@@ -58,6 +62,37 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+.skip-navigation {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skip-navigation__link {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 2px solid #0a4ec4;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0a4ec4;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-decoration: none;
+  transform: translateY(-220%);
+  transition: transform 0.2s ease;
+}
+
+.skip-navigation__link:focus,
+.skip-navigation__link:focus-visible {
+  transform: translateY(0);
+  text-decoration: none;
 }
 
 .app-frame {
@@ -109,6 +144,10 @@ a:hover {
 .app-frame__main {
   min-height: calc(100vh - var(--app-header-height));
   min-height: calc(100dvh - var(--app-header-height));
+}
+
+.app-frame__main:focus {
+  outline: none;
 }
 
 .app-frame--map {
@@ -7432,6 +7471,11 @@ html[data-bw-reduce-motion='off'] .home-section-entrance--quick {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   border: 0;
+}
+
+.settings-section,
+.policy-detail-page__body section {
+  scroll-margin-top: calc(var(--app-header-height) + 24px);
 }
 
 .accessibility-map {
@@ -17505,6 +17549,45 @@ html[data-bw-contrast='on'] .settings-page--refined dt,
 html[data-bw-contrast='on'] .settings-page--refined dd,
 html[data-bw-contrast='on'] .settings-page--refined li {
   color: #111827;
+}
+
+html[data-bw-color-blind-mode='on'] {
+  --primary: #0050a4;
+  --primary-strong: #0b3b75;
+}
+
+html[data-bw-color-blind-mode='on'] .app-frame :where(
+  .settings-status-badge,
+  .home-badge,
+  .accessibility-map__status-pill,
+  .accessibility-map__score-badge,
+  .posting-detail-modal__hero-badge,
+  .posting-detail-modal__status-chip
+) {
+  border: 2px solid currentColor !important;
+  background-color: #ffffff !important;
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(15, 23, 42, 0.04) 0 8px,
+    rgba(255, 255, 255, 0.94) 8px 16px
+  );
+  color: #111827 !important;
+  box-shadow: none !important;
+}
+
+html[data-bw-color-blind-mode='on'] .app-frame :where(
+  .home-map-legend i,
+  .accessibility-map__legend-dot,
+  .accessibility-map__marker
+) {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.86),
+    0 0 0 2px rgba(15, 23, 42, 0.5);
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.12) 0 4px,
+    rgba(15, 23, 42, 0.18) 4px 8px
+  );
 }
 
 html[data-bw-score-display='text-first'] .settings-status-badge,

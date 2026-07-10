@@ -41,7 +41,7 @@ export function SettingsStatusBadge({ tone = 'neutral', children }) {
 
 export function SettingsSection({ id, title, description, children, tone = 'default', actions = null }) {
   return (
-    <section id={id} className={`settings-section settings-section--${tone}`} aria-labelledby={`${id}-title`}>
+    <section id={id} className={`settings-section settings-section--${tone}`} aria-labelledby={`${id}-title`} tabIndex={-1}>
       <div className="settings-section__header">
         <div>
           <h2 id={`${id}-title`}>{title}</h2>
