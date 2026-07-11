@@ -66,11 +66,12 @@ a:hover {
 
 .skip-navigation {
   position: fixed;
-  top: 12px;
-  left: 12px;
-  z-index: 120;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1101;
   display: flex;
   flex-direction: column;
+  align-items: flex-end;
   gap: 8px;
 }
 
@@ -85,13 +86,14 @@ a:hover {
   font-weight: 800;
   line-height: 1.2;
   text-decoration: none;
-  transform: translateY(-220%);
+  box-shadow: 0 10px 24px rgba(10, 34, 69, 0.12);
+  transform: translateX(calc(100% + 24px));
   transition: transform 0.2s ease;
 }
 
 .skip-navigation__link:focus,
 .skip-navigation__link:focus-visible {
-  transform: translateY(0);
+  transform: translateX(0);
   text-decoration: none;
 }
 
@@ -15772,22 +15774,102 @@ html[data-bw-reduce-motion='off'] .home-section-entrance--quick {
 }
 
 .settings-accessibility-layout {
-  grid-template-columns: minmax(0, 1fr) 276px;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--settings-gap-lg);
 }
 
+.settings-accessibility-controls {
+  display: grid;
+  gap: 16px;
+}
+
+.settings-accessibility-controls .settings-preference-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.settings-accessibility-controls .settings-radio-group {
+  padding: 20px;
+  border-color: #cbdcf3;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f7faff 0%, #ffffff 62%);
+}
+
+.settings-accessibility-controls .settings-radio-group legend {
+  padding: 0 8px;
+  font-size: calc(18px * var(--ui-text-scale));
+}
+
+.settings-accessibility-controls .settings-radio-group__options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.settings-accessibility-controls .settings-radio-option,
+.settings-accessibility-controls .settings-radio-option span {
+  width: 100%;
+}
+
+.settings-accessibility-controls .settings-radio-option span {
+  min-height: 52px;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+}
+
+.settings-accessibility-controls .settings-radio-option:hover span {
+  border-color: #8cb7f6;
+  background: #f7fbff;
+}
+
+.settings-accessibility-controls .settings-radio-option.is-active span {
+  border-color: #2f7df6;
+  color: #0b4fc4;
+  background: #eaf2ff;
+  box-shadow: inset 0 0 0 1px rgba(47, 125, 246, 0.16);
+}
+
+.settings-accessibility-layout .settings-toggle-list--compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 0;
+}
+
 .settings-page--refined .settings-toggle {
-  min-height: 54px;
-  gap: var(--settings-gap-md);
-  padding: calc(11px * var(--ui-density-scale)) calc(12px * var(--ui-density-scale));
-  border-radius: var(--ui-card-radius-md);
+  min-height: 94px;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 18px;
+  border-color: #d8e3f1;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+}
+
+.settings-page--refined .settings-toggle:hover {
+  border-color: #9fc2f6;
+  background: #f9fcff;
+  box-shadow: 0 5px 16px rgba(30, 78, 140, 0.08);
+}
+
+.settings-page--refined .settings-toggle.is-active {
+  border-color: #79aaf2;
+  background: linear-gradient(135deg, #f2f7ff 0%, #ffffff 78%);
+  box-shadow: inset 3px 0 0 #2f7df6, 0 5px 16px rgba(30, 78, 140, 0.07);
 }
 
 .settings-page--refined .settings-toggle__label {
-  font-size: calc(16px * var(--ui-text-scale));
+  font-size: calc(17px * var(--ui-text-scale));
+}
+
+.settings-page--refined .settings-toggle__description {
+  line-height: 1.55;
 }
 
 .settings-toggle__switch {
+  margin-top: 2px;
   width: 50px;
   height: 28px;
   flex-basis: 50px;
@@ -17264,6 +17346,10 @@ html[data-bw-reduce-motion='off'] .home-section-entrance--quick {
   .accessibility-map__question-tooltip {
     width: min(420px, calc(100vw - 32px));
     padding: 16px 18px 18px;
+  }
+
+  .settings-accessibility-controls .settings-radio-group__options {
+    grid-template-columns: 1fr;
   }
 }
 
